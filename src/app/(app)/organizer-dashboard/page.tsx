@@ -6,7 +6,7 @@ import { PageHeader } from '@/components/page-header';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useFirebase, setDocumentNonBlocking, addDocumentNonBlocking } from '@/firebase';
 import { useCollection } from '@/firebase/firestore/use-collection';
-import { collection, query, where, getDocs, setDoc, doc } from 'firebase/firestore';
+import { collection, query, where, getDocs, setDoc, doc, documentId } from 'firebase/firestore';
 import { useMemoFirebase } from '@/firebase/provider';
 import type { Event, Registration, Attendance, User } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -219,12 +219,13 @@ function AttendanceList() {
 
         const fetchAttendees = async () => {
             setIsLoading(true);
+            setAttendees([]);
             const attendanceQuery = query(collection(firestore, 'attendance'), where('eventId', '==', selectedEventId));
             const attendanceSnap = await getDocs(attendanceQuery);
             const userIds = attendanceSnap.docs.map(doc => doc.data().userId);
 
             if (userIds.length > 0) {
-                const usersQuery = query(collection(firestore, 'users'), where('__name__', 'in', userIds));
+                const usersQuery = query(collection(firestore, 'users'), where(documentId(), 'in', userIds));
                 const usersSnap = await getDocs(usersQuery);
                 const usersData = usersSnap.docs.map(doc => ({ ...doc.data(), id: doc.id } as User));
                 setAttendees(usersData);
@@ -263,7 +264,10 @@ function AttendanceList() {
                 {isLoading && <p>Loading attendance...</p>}
                 
                 {!isLoading && selectedEventId && attendees.length === 0 && (
-                    <p className="text-center text-muted-foreground pt-4">No one has checked in yet.</p>
+                    <p className="text-center text-muted-foreground pt-4">No one has checked in yet for this event.</p>
+                )}
+                 {!isLoading && !selectedEventId && (
+                    <p className="text-center text-muted-foreground pt-4">Please select an event to view attendance.</p>
                 )}
 
                 {!isLoading && attendees.length > 0 && (
@@ -345,5 +349,3 @@ function FreeSectionFinder() {
         </Card>
     );
 }
-
-    
