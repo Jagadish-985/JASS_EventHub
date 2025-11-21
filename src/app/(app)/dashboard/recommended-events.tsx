@@ -2,23 +2,27 @@
 
 import { useState, useEffect } from 'react';
 import { getPersonalizedEventRecommendations, PersonalizedEventRecommendationsOutput } from '@/ai/flows/personalized-event-recommendations';
-import type { User } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Wand2 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useFirebase } from '@/firebase';
 
-export default function RecommendedEvents({ user }: { user: User }) {
+export default function RecommendedEvents() {
+  const { user } = useFirebase();
   const [recommendations, setRecommendations] = useState<PersonalizedEventRecommendationsOutput | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const fetchRecommendations = async () => {
+    if (!user || !user.uid) return;
     setLoading(true);
     setError(null);
     try {
+      // NOTE: In a real app, you would fetch user interests and past attendance from your database.
+      // For now, we'll use some placeholder data.
       const result = await getPersonalizedEventRecommendations({
-        userInterests: user.interests,
-        pastAttendance: user.pastAttendance,
+        userInterests: ['AI', 'Web Development', 'UX Design'],
+        pastAttendance: ['Web Dev Conf 2023', 'Intro to Machine Learning'],
       });
       setRecommendations(result);
     } catch (e) {
@@ -30,7 +34,7 @@ export default function RecommendedEvents({ user }: { user: User }) {
 
   useEffect(() => {
     fetchRecommendations();
-  }, [user.interests, user.pastAttendance]);
+  }, [user]);
 
   return (
     <div className="space-y-4">

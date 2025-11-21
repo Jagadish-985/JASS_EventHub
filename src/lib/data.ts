@@ -1,6 +1,10 @@
 import type { User, Event, Certificate } from './types';
 
+// This file contains placeholder data.
+// In a real application, this data would be fetched from a database.
+
 export const user: User = {
+  id: '1',
   name: 'Alex Doe',
   email: 'alex.doe@example.com',
   avatar: 'https://picsum.photos/seed/301/100/100',

@@ -1,10 +1,26 @@
+'use client'
 import { PageHeader } from '@/components/page-header';
 import { Input } from '@/components/ui/input';
 import { Search } from 'lucide-react';
-import { events } from '@/lib/data';
 import { EventCard } from '@/components/event-card';
+import { useFirebase } from '@/firebase';
+import { useCollection } from '@/firebase/firestore/use-collection';
+import { collection } from 'firebase/firestore';
+import { useMemoFirebase } from '@/firebase/provider';
+import { Event } from '@/lib/types';
 
 export default function EventsPage() {
+  const { firestore, user } = useFirebase();
+
+  const eventsQuery = useMemoFirebase(() => {
+    if (!user) return null;
+    // NOTE: This currently fetches events owned by the user.
+    // In a real app, you would likely fetch all public events.
+    return collection(firestore, 'users', user.uid, 'events');
+  }, [firestore, user]);
+
+  const { data: events, isLoading } = useCollection<Event>(eventsQuery);
+
   return (
     <div className="animate-in fade-in-50">
       <PageHeader
@@ -16,12 +32,34 @@ export default function EventsPage() {
           <Input placeholder="Search events..." className="pl-10" />
         </div>
       </PageHeader>
+      
+      {isLoading && (
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          {Array.from({ length: 8 }).map((_, i) => (
+            <div key={i} className="border rounded-lg p-4 space-y-3">
+              <div className="aspect-video w-full rounded bg-muted animate-pulse" />
+              <div className="h-5 w-3/4 rounded bg-muted animate-pulse" />
+              <div className="h-4 w-1/2 rounded bg-muted animate-pulse" />
+              <div className="h-4 w-1/3 rounded bg-muted animate-pulse" />
+            </div>
+          ))}
+        </div>
+      )}
 
-      <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-        {events.map((event) => (
-          <EventCard key={event.id} event={event} />
-        ))}
-      </div>
+      {!isLoading && events && events.length > 0 &&(
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          {events.map((event) => (
+            <EventCard key={event.id} event={event} />
+          ))}
+        </div>
+      )}
+
+       {!isLoading && (!events || events.length === 0) && (
+        <div className="text-center py-16 border-2 border-dashed rounded-lg">
+          <h3 className="text-xl font-semibold">No events found</h3>
+          <p className="text-muted-foreground mt-2">Check back later or create a new event.</p>
+        </div>
+      )}
     </div>
   );
 }
