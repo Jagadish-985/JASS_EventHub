@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { useFirebase } from "@/firebase";
 import { signOut, User } from "firebase/auth";
+import Link from "next/link";
 
 export function UserNav({ user }: { user: User }) {
   const { auth } = useFirebase();
@@ -51,12 +52,16 @@ export function UserNav({ user }: { user: User }) {
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
-          <DropdownMenuItem>
-            Profile
-          </DropdownMenuItem>
-          <DropdownMenuItem>
-            Settings
-          </DropdownMenuItem>
+          <Link href="/profile">
+            <DropdownMenuItem>
+              Profile
+            </DropdownMenuItem>
+          </Link>
+          <Link href="/settings">
+            <DropdownMenuItem>
+              Settings
+            </DropdownMenuItem>
+          </Link>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={handleLogout}>
