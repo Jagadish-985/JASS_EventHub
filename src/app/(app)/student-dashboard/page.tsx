@@ -92,9 +92,8 @@ function MyRegistrations() {
                     <Image
                       src={event.image || `https://picsum.photos/seed/${event.id}/400/250`}
                       alt={event.name}
-                      layout="fill"
-                      objectFit="cover"
-                      className="transition-transform group-hover:scale-105"
+                      fill
+                      className="object-cover transition-transform group-hover:scale-105"
                     />
                   </div>
                   <div className="p-4">
@@ -138,7 +137,7 @@ function MyCertificates() {
                 <div>
                   <p className="font-semibold">Certificate for Event: {cert.eventId}</p>
                   <p className="text-sm text-muted-foreground truncate">ID: {cert.id}</p>
-                  <p className="text-xs text-muted-foreground truncate">Hash: {cert.hash}</p>
+                  <p className="text-sm text-muted-foreground truncate">Hash: {cert.hash}</p>
                 </div>
                 <div className="flex items-center gap-2">
                   <Button variant="outline" size="icon">

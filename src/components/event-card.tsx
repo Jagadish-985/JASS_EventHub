@@ -19,8 +19,7 @@ export function EventCard({ event }: { event: Event }) {
               <Image
                 src={placeholderImage}
                 alt={event.name}
-                layout="fill"
-                objectFit="cover"
+                fill
                 className="object-cover"
                 data-ai-hint="event photo"
               />

@@ -17,16 +17,16 @@
       "type": "object",
       "description": "Represents an event.",
       "properties": {
-        "title": { "type": "string" },
+        "name": { "type": "string" },
         "description": { "type": "string" },
-        "date": { "type": "string", "format": "date-time" },
-        "time": { "type": "string" },
-        "venue": { "type": "string" },
+        "startTime": { "type": "string", "format": "date-time" },
+        "endTime": { "type": "string", "format": "date-time" },
+        "location": { "type": "string" },
         "category": { "type": "string" },
         "tags": { "type": "array", "items": { "type": "string" } },
-        "createdBy": { "type": "string" }
+        "organizerId": { "type": "string" }
       },
-      "required": ["title", "date", "venue", "createdBy"]
+      "required": ["name", "startTime", "location", "organizerId"]
     },
     "Registration": {
       "title": "Registration",

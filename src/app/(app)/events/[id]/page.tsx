@@ -58,8 +58,7 @@ export default function EventDetailsPage() {
         <Image
           src={event.image || `https://picsum.photos/seed/${event.id}/1200/400`}
           alt={event.name}
-          layout="fill"
-          objectFit="cover"
+          fill
           className="object-cover"
           data-ai-hint="event banner"
         />

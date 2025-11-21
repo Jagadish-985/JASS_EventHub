@@ -5,7 +5,7 @@ import { PageHeader } from '@/components/page-header';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useFirebase } from '@/firebase';
 import { useCollection } from '@/firebase/firestore/use-collection';
-import { collection, query, where, getDocs } from 'firebase/firestore';
+import { collection, query, where, getDocs, setDoc, doc } from 'firebase/firestore';
 import { useMemoFirebase } from '@/firebase/provider';
 import type { Event, Registration } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -13,7 +13,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { v4 as uuidv4 } from 'uuid';
-import { addDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { useToast } from '@/hooks/use-toast';
 import Image from 'next/image';
 import { Loader2 } from 'lucide-react';
@@ -83,16 +82,26 @@ function CreateEventForm() {
       image: `https://picsum.photos/seed/${eventId}/600/400`,
     };
 
-    const eventRef = collection(firestore, 'events');
-    // We are using `addDoc` which will create a new doc with random ID, but we set `id` field inside our data
-    await addDocumentNonBlocking(eventRef, eventData);
-    
-    toast({
-      title: 'Event Created!',
-      description: `${eventData.name} has been successfully created.`,
-    });
+    try {
+        const eventRef = doc(firestore, 'events', eventId);
+        await setDoc(eventRef, eventData);
+        
+        toast({
+        title: 'Event Created!',
+        description: `${eventData.name} has been successfully created.`,
+        });
+        (e.target as HTMLFormElement).reset();
+    } catch (error) {
+        console.error("Error creating event: ", error);
+        toast({
+            variant: "destructive",
+            title: 'Event Creation Failed',
+            description: 'There was an error creating your event.',
+        });
+    }
+
+
     setIsLoading(false);
-    (e.target as HTMLFormElement).reset();
   };
 
   return (
@@ -103,7 +112,7 @@ function CreateEventForm() {
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
-          <Input name="name" placeholder="Event Title" required />
+          <Input name="name" placeholder="Event Name" required />
           <Textarea name="description" placeholder="Event Description" required />
           <Input name="date" type="datetime-local" required />
           <Input name="venue" placeholder="Venue" required />
