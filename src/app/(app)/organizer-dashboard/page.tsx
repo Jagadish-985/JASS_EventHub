@@ -151,6 +151,7 @@ function MyEvents() {
     <Card>
       <CardHeader>
         <CardTitle>My Events</CardTitle>
+        <CardDescription>A list of events you have created.</CardDescription>
       </CardHeader>
       <CardContent>
         {isLoading && <p>Loading events...</p>}
@@ -223,18 +224,25 @@ function AttendanceList() {
             setIsLoading(true);
             setAttendees([]);
             try {
+                // 1. Get all attendance records for the selected event
                 const attendanceQuery = query(collection(firestore, 'attendance'), where('eventId', '==', selectedEventId));
                 const attendanceSnap = await getDocs(attendanceQuery);
                 const userIds = attendanceSnap.docs.map(doc => doc.data().userId);
 
+                // 2. If there are attendees, fetch their user profiles
                 if (userIds.length > 0) {
-                    const usersQuery = query(collection(firestore, 'users'), where(documentId(), 'in', userIds));
+                    // Firestore 'in' query is limited to 30 items per query. 
+                    // For more, you'd need to batch the requests.
+                    const usersQuery = query(collection(firestore, 'users'), where(documentId(), 'in', userIds.slice(0, 30)));
                     const usersSnap = await getDocs(usersQuery);
                     const usersData = usersSnap.docs.map(doc => ({ ...doc.data(), id: doc.id } as User));
                     setAttendees(usersData);
+                } else {
+                    setAttendees([]); // Ensure attendees list is empty if no userIds
                 }
             } catch (error) {
                 console.error("Error fetching attendees:", error);
+                setAttendees([]); // Clear attendees on error
             } finally {
                 setIsLoading(false);
             }
@@ -266,7 +274,7 @@ function AttendanceList() {
                     </SelectContent>
                 </Select>
 
-                {isLoading && <p>Loading attendance...</p>}
+                {isLoading && <div className="flex items-center justify-center p-4"><Loader2 className="mr-2 h-4 w-4 animate-spin" />Loading attendance...</div>}
                 
                 {!isLoading && selectedEventId && attendees.length === 0 && (
                     <p className="text-center text-muted-foreground pt-4">No one has checked in yet for this event.</p>
