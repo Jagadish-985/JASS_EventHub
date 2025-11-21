@@ -49,42 +49,53 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const [isRoleLoading, setIsRoleLoading] = useState(true);
 
   useEffect(() => {
-    if (isUserLoading) return;
     if (!user) {
-      router.push('/login');
+      if (!isUserLoading) {
+        router.push('/login');
+      }
       return;
     }
 
     const fetchUserRole = async () => {
       setIsRoleLoading(true);
-      const userDocRef = doc(firestore, 'users', user.uid);
-      const userDoc = await getDoc(userDocRef);
-      if (userDoc.exists()) {
-        const userData = userDoc.data();
-        const role = userData.role;
-        setUserRole(role);
-
-        // Redirect based on role and current path
-        if (role === 'admin' && !pathname.startsWith('/admin')) {
-          router.push('/admin/dashboard');
-        } else if (role === 'student' && pathname.startsWith('/admin')) {
-          router.push('/dashboard');
+      try {
+        const userDocRef = doc(firestore, 'users', user.uid);
+        const userDoc = await getDoc(userDocRef);
+        if (userDoc.exists()) {
+          const role = userDoc.data()?.role;
+          setUserRole(role);
+        } else {
+          // If the doc doesn't exist, the user might be signing up.
+          // We can wait for it to be created. This can be improved.
+          console.warn("User document not found for uid:", user.uid);
+          setUserRole(null); 
         }
-
-      } else {
-        // Handle case where user document doesn't exist yet
-        console.warn("User document not found, redirecting to login.");
-        router.push('/login');
+      } catch (error) {
+        console.error("Error fetching user role:", error);
+        setUserRole(null); // Set to null on error
+      } finally {
+        setIsRoleLoading(false);
       }
-      setIsRoleLoading(false);
     };
 
     fetchUserRole();
-  }, [isUserLoading, user, router, firestore, pathname]);
+  }, [user, isUserLoading, firestore, router]);
+  
+  // New effect for handling redirection logic separately
+  useEffect(() => {
+    if (!isUserLoading && !isRoleLoading && user) {
+        if (userRole === 'admin' && !pathname.startsWith('/admin')) {
+          router.push('/admin/dashboard');
+        } else if (userRole === 'student' && (pathname.startsWith('/admin') || pathname.startsWith('/reports') || pathname.startsWith('/analytics') || pathname.startsWith('/tools'))) {
+          router.push('/dashboard');
+        }
+    }
+  }, [isUserLoading, isRoleLoading, userRole, pathname, router, user]);
+
 
   const isLoading = isUserLoading || isRoleLoading;
 
-  if (isLoading || !user) {
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center h-screen bg-background">
         <div className="text-center text-foreground">
@@ -94,6 +105,10 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       </div>
     );
   }
+
+  // If loading is finished and there's no user, we've already redirected, but this is a safeguard.
+  if(!user) return null;
+
 
   const navItems = userRole === 'admin' ? adminNavItems : studentNavItems;
   const homeLink = userRole === 'admin' ? '/admin/dashboard' : '/dashboard';
