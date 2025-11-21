@@ -1,73 +1,8 @@
 rules_version = '2';
-
 service cloud.firestore {
   match /databases/{database}/documents {
-    
-    // Helper Functions
-    function isSignedIn() {
-      return request.auth != null;
-    }
-
-    function isOwner(userId) {
-      return isSignedIn() && request.auth.uid == userId;
-    }
-    
-    function isRole(role) {
-        return isSignedIn() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == role;
-    }
-
-    // USER-OWNED DATA
-    match /users/{userId} {
-      // Anyone can create their own user document upon signup.
-      allow create: if isSignedIn() && request.auth.uid == userId;
-      // Users can read and update their own data.
-      allow read, update: if isOwner(userId);
-      // No one can list all users or delete accounts through rules.
-      allow list, delete: if false;
-    }
-
-    // EVENTS
-    match /events/{eventId} {
-      // Any signed-in user can read/list events.
-      allow get, list: if isSignedIn();
-      // Only organizers or admins can create, update, or delete events.
-      allow create, update, delete: if isRole('organizer') || isRole('admin');
-    }
-
-    // REGISTRATIONS
-    match /registrations/{registrationId} {
-      // Any signed-in user can create their own registration.
-      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
-      // Users can read their own registrations. Organizers/Admins can read all for their events.
-      allow read: if (isSignedIn() && request.resource.data.userId == request.auth.uid) || isRole('organizer') || isRole('admin');
-      // No one can list all registrations globally for security.
-      allow list: if false;
-      allow update, delete: if isRole('organizer') || isRole('admin');
-    }
-    
-    // ATTENDANCE
-    match /attendance/{attendanceId} {
-        // Organizers/Admins can create attendance records (e.g., via QR scan flow).
-        allow create: if isRole('organizer') || isRole('admin');
-        // Users can read their own attendance, Organizers/Admins can read all for an event.
-        allow read: if (isSignedIn() && resource.data.userId == request.auth.uid) || isRole('organizer') || isRole('admin');
-        allow list, update, delete: if isRole('organizer') || isRole('admin');
-    }
-
-    // CERTIFICATES
-    match /certificates/{certificateId} {
-        // Organizers/Admins can issue certificates.
-        allow create: if isRole('organizer') || isRole('admin');
-        // Users can read their own certificates.
-        allow read: if (isSignedIn() && resource.data.userId == request.auth.uid) || isRole('admin');
-        // Admins can validate any certificate.
-        allow list, update, delete: if isRole('admin');
-    }
-
-    // REPORTS
-    match /reports/{reportId} {
-        // Only organizers and admins can manage reports.
-        allow create, read, update, delete, list: if isRole('organizer') || isRole('admin');
+    match /{document=**} {
+      allow read, write: if true;
     }
   }
 }

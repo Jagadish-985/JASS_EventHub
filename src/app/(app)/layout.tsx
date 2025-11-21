@@ -10,6 +10,7 @@ import {
   User,
   QrCode,
   FileText,
+  Home,
 } from 'lucide-react';
 import { UserNav } from '@/components/user-nav';
 import { useFirebase } from '@/firebase';
@@ -39,6 +40,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     }
 
     const fetchUserRole = async () => {
+      if (!firestore || !user) return;
       setIsRoleLoading(true);
       try {
         const userDocRef = doc(firestore, 'users', user.uid);
@@ -46,10 +48,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         if (userDoc.exists()) {
           setUserRole(userDoc.data()?.role);
         } else {
-          // If no user doc, maybe they signed up but doc creation failed.
-          // For now, treat as no role. A robust app might try to create the doc.
           setUserRole(null);
-          // Log out the user if their document doesn't exist to prevent being stuck.
           await auth.signOut();
           router.push('/login');
         }
@@ -74,7 +73,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   if (isLoading) {
     return (
       <div className="flex h-screen w-screen items-center justify-center bg-background">
-        <p className="text-foreground">Loading your EventHub+ experience...</p>
+        <p>Loading your EventHub+ experience...</p>
       </div>
     );
   }
@@ -95,49 +94,51 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   const adminLinks = [{ href: '/admin-panel', label: 'Admin Panel', icon: Settings }];
 
-  let navLinks: { href: string; label:string; icon: React.ElementType }[] = [];
+  let navLinks: { href: string; label: string; icon: React.ElementType }[] = [
+    { href: '/home', label: 'Home', icon: Home },
+  ];
   if (userRole === 'student') {
-    navLinks = [...studentLinks, ...commonLinks];
+    navLinks = [...navLinks, ...studentLinks, ...commonLinks];
   } else if (userRole === 'organizer') {
-    navLinks = [...organizerLinks, ...commonLinks];
+    navLinks = [...navLinks, ...organizerLinks, ...commonLinks];
   } else if (userRole === 'admin') {
-    navLinks = [...adminLinks, ...organizerLinks, ...commonLinks];
+    navLinks = [...navLinks, ...adminLinks, ...organizerLinks, ...commonLinks];
   }
 
   const SidebarNav = ({ isMobile = false }) => (
-    <TooltipProvider delayDuration={0}>
-      <nav className={`flex flex-col gap-2 ${isMobile ? 'p-4' : ''}`}>
+    <nav className={`flex flex-col gap-2 ${isMobile ? 'p-4' : ''}`}>
         <Link
           href="/home"
-          className="mb-4 flex items-center gap-2 text-lg font-bold text-primary"
+          className="mb-4 flex items-center gap-2 text-xl font-bold text-primary"
         >
           EventHub+
         </Link>
         {navLinks.map((link) => (
-          <Tooltip key={link.href}>
-            <TooltipTrigger asChild>
-              <Link href={link.href}>
-                <Button
-                  variant={pathname.startsWith(link.href) ? 'secondary' : 'ghost'}
-                  className="w-full justify-start"
-                >
-                  <link.icon className="mr-2 h-4 w-4" />
+          <TooltipProvider key={link.href} delayDuration={0}>
+             <Tooltip>
+                <TooltipTrigger asChild>
+                  <Link href={link.href}>
+                    <Button
+                      variant={pathname.startsWith(link.href) ? 'secondary' : 'ghost'}
+                      className="w-full justify-start"
+                    >
+                      <link.icon className="mr-2 h-4 w-4" />
+                      {link.label}
+                    </Button>
+                  </Link>
+                </TooltipTrigger>
+                {!isMobile && <TooltipContent side="right" className="flex items-center gap-4">
                   {link.label}
-                </Button>
-              </Link>
-            </TooltipTrigger>
-            <TooltipContent side="right" className="flex items-center gap-4">
-              {link.label}
-            </TooltipContent>
-          </Tooltip>
+                </TooltipContent>}
+              </Tooltip>
+          </TooltipProvider>
         ))}
       </nav>
-    </TooltipProvider>
   );
 
   return (
-    <div className="flex min-h-screen w-full bg-background text-foreground">
-      <aside className="hidden w-64 flex-col border-r bg-card p-4 sm:flex">
+    <div className="flex min-h-screen w-full bg-gray-50 text-gray-900">
+      <aside className="hidden w-64 flex-col border-r bg-white p-4 sm:flex">
         <SidebarNav />
         <div className="mt-auto flex flex-col gap-2">
           <Link href="/profile">
@@ -153,7 +154,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         </div>
       </aside>
       <div className="flex flex-1 flex-col">
-        <header className="sticky top-0 z-40 flex h-16 items-center justify-between border-b bg-card px-6">
+        <header className="sticky top-0 z-40 flex h-16 items-center justify-between border-b bg-white px-6">
            <div className="sm:hidden">
              <Sheet>
               <SheetTrigger asChild>
@@ -162,7 +163,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                   <span className="sr-only">Toggle Menu</span>
                 </Button>
               </SheetTrigger>
-              <SheetContent side="left" className="w-72 p-0">
+              <SheetContent side="left" className="w-72 p-0 bg-white">
                 <div className="flex h-full flex-col">
                   <SidebarNav isMobile={true} />
                    <div className="mt-auto flex flex-col gap-2 p-4">
@@ -189,7 +190,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           <div className="hidden flex-1 sm:block" />
           {user && <UserNav user={user} />}
         </header>
-        <main className="flex-1 p-4 md:p-6 lg:p-8">
+        <main className="flex-1 p-4 md:p-6 lg:p-8 overflow-y-auto">
           {children}
         </main>
       </div>

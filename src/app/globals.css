@@ -4,79 +4,83 @@
 
 @layer base {
   :root {
-    --background: 220 20% 98%; /* Light gray-blue */
-    --foreground: 215 75% 12%; /* Navy Blue */
-
-    --card: 0 0% 100%; /* White */
-    --card-foreground: 215 75% 12%;
+    --background: 240 5% 96%; /* #F9FAFB */
+    --foreground: 240 10% 3.9%;
+ 
+    --card: 0 0% 100%;
+    --card-foreground: 240 10% 3.9%;
  
     --popover: 0 0% 100%;
-    --popover-foreground: 215 75% 12%;
+    --popover-foreground: 240 10% 3.9%;
  
-    --primary: 215 75% 12%; /* Navy Blue */
+    --primary: 243 80% 58%; /* #4F46E5 */
     --primary-foreground: 0 0% 100%;
  
-    --secondary: 220 20% 94%; /* Lighter gray-blue for secondary button backgrounds */
-    --secondary-foreground: 215 75% 12%; /* Navy text on secondary buttons */
+    --secondary: 242 84% 70%; /* #6366F1 */
+    --secondary-foreground: 240 10% 3.9%;
  
-    --muted: 220 10% 90%;
-    --muted-foreground: 215 20% 45%;
+    --muted: 240 4.8% 95.9%;
+    --muted-foreground: 240 3.8% 46.1%;
  
-    --accent: 207 100% 67%; /* Sky Blue */
-    --accent-foreground: 215 75% 12%;
+    --accent: 188 95% 42%; /* #06B6D4 */
+    --accent-foreground: 240 10% 3.9%;
  
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 0 0% 100%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
 
-    --border: 215 20% 85%;
-    --input: 215 20% 88%;
-    --ring: 207 100% 67%; /* Sky blue for focus rings */
+    --border: 240 5.9% 90%;
+    --input: 240 5.9% 90%;
+    --ring: 243 80% 58%;
+ 
+    --radius: 10px;
 
-    --radius: 0.5rem; /* 8px */
-
-    --chart-1: 215 75% 12%;
-    --chart-2: 207 100% 67%;
-    --chart-3: 197 37% 24%;
+    --chart-1: 243 80% 58%;
+    --chart-2: 188 95% 42%;
+    --chart-3: 242 84% 70%;
     --chart-4: 43 74% 66%;
     --chart-5: 27 87% 67%;
   }
  
   .dark {
-    --background: 215 75% 8%;
-    --foreground: 220 20% 98%;
+    --background: 240 10% 3.9%;
+    --foreground: 0 0% 98%;
  
-    --card: 215 75% 12%;
-    --card-foreground: 220 20% 98%;
+    --card: 240 10% 3.9%;
+    --card-foreground: 0 0% 98%;
  
-    --popover: 215 75% 12%;
-    --popover-foreground: 220 20% 98%;
+    --popover: 240 10% 3.9%;
+    --popover-foreground: 0 0% 98%;
  
-    --primary: 210 100% 83%; /* Light Blue */
-    --primary-foreground: 215 75% 12%;
+    --primary: 243 80% 58%;
+    --primary-foreground: 0 0% 100%;
  
-    --secondary: 215 30% 20%;
-    --secondary-foreground: 220 20% 98%;
+    --secondary: 242 84% 70%;
+    --secondary-foreground: 0 0% 98%;
  
-    --muted: 215 30% 20%;
-    --muted-foreground: 215 20% 65%;
+    --muted: 240 3.7% 15.9%;
+    --muted-foreground: 240 5% 64.9%;
  
-    --accent: 207 100% 67%; /* Sky Blue */
-    --accent-foreground: 215 75% 12%;
+    --accent: 188 95% 42%;
+    --accent-foreground: 0 0% 98%;
  
-    --destructive: 0 63% 31%;
-    --destructive-foreground: 0 0% 100%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
  
-    --border: 215 30% 25%;
-    --input: 215 30% 25%;
-    --ring: 207 100% 67%;
+    --border: 240 3.7% 15.9%;
+    --input: 240 3.7% 15.9%;
+    --ring: 243 80% 58%;
   }
 }
-
+ 
 @layer base {
   * {
     @apply border-border;
   }
   body {
     @apply bg-background text-foreground;
+    font-family: 'Inter', sans-serif;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-bold tracking-tight;
   }
 }
