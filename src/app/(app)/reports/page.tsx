@@ -15,15 +15,18 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 
 export default function ReportsPage() {
-  const { firestore, user } = useFirebase();
+  const { firestore, user, userRole } = useFirebase();
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
   const [reportData, setReportData] = useState<any>(null);
   const [isGenerating, setIsGenerating] = useState(false);
 
   const eventsQuery = useMemoFirebase(() => {
     if (!user) return null;
+    if (userRole === 'admin') {
+      return collection(firestore, 'events');
+    }
     return query(collection(firestore, 'events'), where('organizerId', '==', user.uid));
-  }, [firestore, user]);
+  }, [firestore, user, userRole]);
 
   const { data: events, isLoading: isLoadingEvents } = useCollection<Event>(eventsQuery);
 
@@ -68,7 +71,7 @@ export default function ReportsPage() {
                     <SelectItem key={event.id} value={event.id}>{event.name}</SelectItem>
                   ))
                 ) : (
-                  <SelectItem value="no-events" disabled>No events created</SelectItem>
+                  <SelectItem value="no-events" disabled>No events available</SelectItem>
                 )}
               </SelectContent>
             </Select>

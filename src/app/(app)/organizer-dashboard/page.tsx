@@ -18,6 +18,7 @@ import { useToast } from '@/hooks/use-toast';
 import Image from 'next/image';
 import { Loader2 } from 'lucide-react';
 import { Label } from '@/components/ui/label';
+import { QRCode } from 'qrcode.react';
 
 export default function OrganizerDashboardPage() {
   const { user } = useFirebase();
@@ -180,30 +181,22 @@ function RegistrationsList() {
 
 function QRGenerator() {
     const [eventId, setEventId] = useState('');
-    const [qrCodeDataUrl, setQrCodeDataUrl] = useState('');
-
-    const generateQR = () => {
-        if (!eventId) return;
-        // In a real app, use a QR code generation library.
-        // For now, we simulate with a placeholder image service.
-        setQrCodeDataUrl(`https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${eventId}`);
-    };
 
     return (
         <Card>
             <CardHeader>
                 <CardTitle>QR Code Generator</CardTitle>
-                <CardDescription>Generate a QR code for your event check-in.</CardDescription>
+                <CardDescription>Enter an Event ID to generate a QR code for check-in.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
                 <div className="space-y-2">
                     <Label htmlFor="event-id-qr">Event ID</Label>
                     <Input id="event-id-qr" value={eventId} onChange={(e) => setEventId(e.target.value)} placeholder="Enter Event ID" />
                 </div>
-                <Button onClick={generateQR}>Generate QR Code</Button>
-                {qrCodeDataUrl && (
-                    <div className="mt-4 text-center">
-                        <Image src={qrCodeDataUrl} alt="Event QR Code" width={250} height={250} className="mx-auto" />
+                
+                {eventId && (
+                    <div className="mt-4 text-center p-4 bg-white rounded-md inline-block">
+                        <QRCode value={eventId} size={256} />
                         <p className="mt-2 text-sm text-muted-foreground">Scan this for check-in.</p>
                     </div>
                 )}

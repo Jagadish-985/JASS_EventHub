@@ -1,21 +1,38 @@
 'use client';
 import { useParams } from 'next/navigation';
 import { useDoc } from '@/firebase/firestore/use-doc';
-import { doc, collection } from 'firebase/firestore';
+import { doc, collection, query, where, getDocs } from 'firebase/firestore';
 import { useFirebase, addDocumentNonBlocking } from '@/firebase';
 import { useMemoFirebase } from '@/firebase/provider';
-import { Event } from '@/lib/types';
+import { Event, Registration, User } from '@/lib/types';
 import Image from 'next/image';
 import { PageHeader } from '@/components/page-header';
 import { Button } from '@/components/ui/button';
 import { Calendar, MapPin, Users, Tag, QrCode } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
+import { useState, useEffect } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 export default function EventDetailsPage() {
   const { id } = useParams();
   const { firestore, user } = useFirebase();
   const { toast } = useToast();
+  const [userRole, setUserRole] = useState<string | null>(null);
+  const [registrations, setRegistrations] = useState<Registration[]>([]);
+  const [isLoadingRegistrations, setIsLoadingRegistrations] = useState(false);
+
+  useEffect(() => {
+    if (!user || !firestore) return;
+    const fetchUserRole = async () => {
+      const userDocRef = doc(firestore, 'users', user.uid);
+      const userDoc = await getDocs(userDocRef);
+      if (userDoc.exists()) {
+        setUserRole(userDoc.data()?.role);
+      }
+    };
+    fetchUserRole();
+  }, [user, firestore]);
 
   const eventRef = useMemoFirebase(
     () => (firestore && id ? doc(firestore, 'events', id as string) : null),
@@ -23,6 +40,21 @@ export default function EventDetailsPage() {
   );
 
   const { data: event, isLoading } = useDoc<Event>(eventRef);
+
+  useEffect(() => {
+    if (!event || !firestore || !user) return;
+    if (user.uid === event.organizerId || userRole === 'admin') {
+      const fetchRegistrations = async () => {
+        setIsLoadingRegistrations(true);
+        const q = query(collection(firestore, 'registrations'), where('eventId', '==', event.id));
+        const querySnapshot = await getDocs(q);
+        const regs = querySnapshot.docs.map(doc => doc.data() as Registration);
+        setRegistrations(regs);
+        setIsLoadingRegistrations(false);
+      };
+      fetchRegistrations();
+    }
+  }, [event, firestore, user, userRole]);
 
   const handleRegister = () => {
     if (!user || !event || !firestore) return;
@@ -49,9 +81,11 @@ export default function EventDetailsPage() {
   if (!event) {
     return <div className="text-center p-10">Event not found.</div>;
   }
+  
+  const isOrganizerOrAdmin = user?.uid === event.organizerId || userRole === 'admin';
 
   return (
-    <div className="animate-in fade-in-50">
+    <div className="animate-in fade-in-50 space-y-8">
       <div className="relative h-64 md:h-96 w-full overflow-hidden rounded-xl">
         <Image
           src={event.image || `https://picsum.photos/seed/${event.id}/1200/400`}
@@ -82,8 +116,7 @@ export default function EventDetailsPage() {
             </div>
             <div className="flex items-center gap-3">
               <Users className="h-5 w-5 text-primary" />
-              {/* Mock data for now */}
-              <span>{Math.floor(Math.random() * 200)} Registered</span>
+              <span>{registrations.length} Registered</span>
             </div>
              {user?.uid === event.organizerId && (
               <div className="flex items-center gap-3 pt-2">
@@ -105,12 +138,31 @@ export default function EventDetailsPage() {
           </div>
         )}
 
-        {user && user.uid !== event.organizerId && (
+        {user && !isOrganizerOrAdmin && (
           <Button size="lg" className="w-full md:w-auto" onClick={handleRegister}>
             Register Now
           </Button>
         )}
       </div>
+
+      {isOrganizerOrAdmin && (
+        <Card className="max-w-4xl mx-auto">
+          <CardHeader>
+            <CardTitle>Event Registrations</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {isLoadingRegistrations && <p>Loading registrations...</p>}
+            {!isLoadingRegistrations && registrations.length === 0 && <p>No one has registered yet.</p>}
+            {!isLoadingRegistrations && registrations.length > 0 && (
+              <ul className="space-y-2">
+                {registrations.map((reg) => (
+                  <li key={reg.userId} className="text-sm text-muted-foreground">User ID: {reg.userId}</li>
+                ))}
+              </ul>
+            )}
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }
