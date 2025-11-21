@@ -150,6 +150,12 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 Profile
               </Button>
           </Link>
+           <Link href="/settings">
+             <Button variant="ghost" className="w-full justify-start text-base">
+                <Settings className="mr-3 h-5 w-5" />
+                Settings
+              </Button>
+          </Link>
           <Button variant="ghost" onClick={handleLogout} className="w-full justify-start text-base">
             <LogOut className="mr-3 h-5 w-5" />
             Logout
@@ -186,8 +192,10 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           <div className="hidden flex-1 lg:block" />
           {user && <UserNav user={user} />}
         </header>
-        <main className="flex-1 p-4 md:p-6 lg:p-8 overflow-y-auto">
-          {children}
+        <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8">
+            <div className="container mx-auto max-w-7xl">
+              {children}
+            </div>
         </main>
       </div>
     </div>

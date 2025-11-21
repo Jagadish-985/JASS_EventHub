@@ -130,7 +130,7 @@ export default function QRScannerPage() {
   };
 
   return (
-    <div className="container mx-auto max-w-7xl animate-in fade-in-50">
+    <div className="animate-in fade-in-50">
       <PageHeader
         title="QR Code Scanner"
         description="Scan an event QR code to mark your attendance."

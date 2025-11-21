@@ -66,7 +66,7 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="container mx-auto max-w-7xl animate-in fade-in-50">
+    <div className="animate-in fade-in-50">
       <PageHeader
         title="My Profile"
         description="View and manage your personal information."

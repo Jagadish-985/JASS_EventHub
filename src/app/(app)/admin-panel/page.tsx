@@ -27,7 +27,7 @@ const mockSkillData = [
 
 export default function AdminPanelPage() {
   return (
-    <div className="container mx-auto max-w-7xl space-y-6 animate-in fade-in-50">
+    <div className="space-y-6 animate-in fade-in-50">
       <PageHeader
         title="Admin Panel"
         description="Oversee university event metrics and validate certificates."

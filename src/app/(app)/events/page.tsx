@@ -31,7 +31,7 @@ export default function EventsPage() {
   const { data: events, isLoading } = useCollection<Event>(eventsQuery);
 
   return (
-    <div className="container mx-auto max-w-7xl animate-in fade-in-50">
+    <div className="animate-in fade-in-50">
       <PageHeader
         title="Discover Events"
         description="Browse and search for events that match your interests."
