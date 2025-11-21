@@ -48,9 +48,10 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   if (isUserLoading || !user) {
     return (
-      <div className="flex items-center justify-center h-screen">
-        <div className="text-center">
-          <p>Loading...</p>
+      <div className="flex items-center justify-center h-screen bg-background">
+        <div className="text-center text-foreground">
+          <GraduationCap className="mx-auto h-12 w-12 animate-pulse" />
+          <p className="mt-4">Loading EventHub+...</p>
         </div>
       </div>
     );
@@ -62,7 +63,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         <SidebarHeader className="p-4">
           <Link href="/dashboard" className="flex items-center gap-2.5 font-bold text-lg text-sidebar-foreground">
             <GraduationCap className="w-8 h-8 text-sidebar-primary" />
-            <span className="font-headline tracking-tight group-data-[collapsible=icon]:hidden">EventHub+</span>
+            <span className="font-headline tracking-tight group-data-[collapsible=icon]:hidden">RUAS EventHub+</span>
           </Link>
         </SidebarHeader>
         <SidebarContent>

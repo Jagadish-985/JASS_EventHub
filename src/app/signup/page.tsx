@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { useFirebase } from '@/firebase';
 import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
-import { doc, setDoc } from 'firebase/firestore';
+import { doc } from 'firebase/firestore';
 import { GraduationCap, Loader2 } from 'lucide-react';
 import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 
@@ -42,12 +42,10 @@ export default function SignupPage() {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
 
-      // Update user profile
       await updateProfile(user, {
         displayName: `${firstName} ${lastName}`
       });
 
-      // Create user document in Firestore
       const userDocRef = doc(firestore, 'users', user.uid);
       const userData = {
         id: user.uid,
@@ -80,25 +78,25 @@ export default function SignupPage() {
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-background p-4">
+    <div className="flex items-center justify-center min-h-screen bg-gray-100 dark:bg-gray-900 p-4">
        <div className="w-full max-w-md">
         <div className="flex justify-center mb-6">
-          <Link href="/" className="flex items-center gap-2.5 font-bold text-lg">
+          <Link href="/home" className="flex items-center gap-2.5 font-bold text-lg text-gray-800 dark:text-white">
               <GraduationCap className="w-10 h-10 text-primary" />
-              <span className="text-2xl font-headline tracking-tight">EventHub+</span>
+              <span className="text-2xl font-headline tracking-tight">RUAS EventHub+</span>
           </Link>
         </div>
-        <Card>
+        <Card className="bg-white dark:bg-gray-800 shadow-lg">
           <CardHeader>
-            <CardTitle className="text-2xl">Sign Up</CardTitle>
-            <CardDescription>Enter your information to create an account</CardDescription>
+            <CardTitle className="text-2xl text-gray-900 dark:text-white">Sign Up</CardTitle>
+            <CardDescription className="text-gray-600 dark:text-gray-400">Enter your information to create an account</CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSignUp}>
               <div className="grid gap-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="grid gap-2">
-                    <Label htmlFor="first-name">First name</Label>
+                    <Label htmlFor="first-name" className="text-gray-700 dark:text-gray-300">First name</Label>
                     <Input 
                       id="first-name" 
                       placeholder="Max" 
@@ -106,10 +104,11 @@ export default function SignupPage() {
                       value={firstName}
                       onChange={(e) => setFirstName(e.target.value)}
                       disabled={isLoading}
+                      className="bg-gray-50 border-gray-300 dark:bg-gray-700 dark:border-gray-600"
                     />
                   </div>
                   <div className="grid gap-2">
-                    <Label htmlFor="last-name">Last name</Label>
+                    <Label htmlFor="last-name" className="text-gray-700 dark:text-gray-300">Last name</Label>
                     <Input 
                       id="last-name" 
                       placeholder="Robinson" 
@@ -117,11 +116,12 @@ export default function SignupPage() {
                       value={lastName}
                       onChange={(e) => setLastName(e.target.value)}
                       disabled={isLoading}
+                      className="bg-gray-50 border-gray-300 dark:bg-gray-700 dark:border-gray-600"
                     />
                   </div>
                 </div>
                 <div className="grid gap-2">
-                  <Label htmlFor="email">Email</Label>
+                  <Label htmlFor="email" className="text-gray-700 dark:text-gray-300">Email</Label>
                   <Input
                     id="email"
                     type="email"
@@ -130,10 +130,11 @@ export default function SignupPage() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     disabled={isLoading}
+                    className="bg-gray-50 border-gray-300 dark:bg-gray-700 dark:border-gray-600"
                   />
                 </div>
                 <div className="grid gap-2">
-                  <Label htmlFor="password">Password</Label>
+                  <Label htmlFor="password"  className="text-gray-700 dark:text-gray-300">Password</Label>
                   <Input 
                     id="password" 
                     type="password" 
@@ -141,6 +142,7 @@ export default function SignupPage() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     disabled={isLoading}
+                    className="bg-gray-50 border-gray-300 dark:bg-gray-700 dark:border-gray-600"
                   />
                 </div>
                 <Button type="submit" className="w-full" disabled={isLoading}>
@@ -149,9 +151,9 @@ export default function SignupPage() {
                 </Button>
               </div>
             </form>
-            <div className="mt-4 text-center text-sm">
+            <div className="mt-4 text-center text-sm text-gray-600 dark:text-gray-400">
               Already have an account?{' '}
-              <Link href="/login" className="underline">
+              <Link href="/login" className="underline text-primary">
                 Login
               </Link>
             </div>

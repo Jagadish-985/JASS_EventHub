@@ -38,24 +38,24 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-background p-4">
+    <div className="flex items-center justify-center min-h-screen bg-gray-100 dark:bg-gray-900 p-4">
       <div className="w-full max-w-md">
         <div className="flex justify-center mb-6">
-          <Link href="/" className="flex items-center gap-2.5 font-bold text-lg">
+          <Link href="/home" className="flex items-center gap-2.5 font-bold text-lg text-gray-800 dark:text-white">
               <GraduationCap className="w-10 h-10 text-primary" />
-              <span className="text-2xl font-headline tracking-tight">EventHub+</span>
+              <span className="text-2xl font-headline tracking-tight">RUAS EventHub+</span>
           </Link>
         </div>
-        <Card>
+        <Card className="bg-white dark:bg-gray-800 shadow-lg">
           <CardHeader>
-            <CardTitle className="text-2xl">Login</CardTitle>
-            <CardDescription>Enter your email below to login to your account</CardDescription>
+            <CardTitle className="text-2xl text-gray-900 dark:text-white">Login</CardTitle>
+            <CardDescription className="text-gray-600 dark:text-gray-400">Enter your email below to login to your account</CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleLogin}>
               <div className="grid gap-4">
                 <div className="grid gap-2">
-                  <Label htmlFor="email">Email</Label>
+                  <Label htmlFor="email" className="text-gray-700 dark:text-gray-300">Email</Label>
                   <Input
                     id="email"
                     type="email"
@@ -64,10 +64,11 @@ export default function LoginPage() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     disabled={isLoading}
+                    className="bg-gray-50 border-gray-300 dark:bg-gray-700 dark:border-gray-600"
                   />
                 </div>
                 <div className="grid gap-2">
-                  <Label htmlFor="password">Password</Label>
+                  <Label htmlFor="password"  className="text-gray-700 dark:text-gray-300">Password</Label>
                   <Input 
                     id="password" 
                     type="password" 
@@ -75,6 +76,7 @@ export default function LoginPage() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     disabled={isLoading}
+                    className="bg-gray-50 border-gray-300 dark:bg-gray-700 dark:border-gray-600"
                   />
                 </div>
                 <Button type="submit" className="w-full" disabled={isLoading}>
@@ -83,9 +85,9 @@ export default function LoginPage() {
                 </Button>
               </div>
             </form>
-            <div className="mt-4 text-center text-sm">
+            <div className="mt-4 text-center text-sm text-gray-600 dark:text-gray-400">
               Don&apos;t have an account?{' '}
-              <Link href="/signup" className="underline">
+              <Link href="/signup" className="underline text-primary">
                 Sign up
               </Link>
             </div>
