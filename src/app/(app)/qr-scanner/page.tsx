@@ -3,8 +3,8 @@ import { useState, useEffect, useRef } from 'react';
 import { PageHeader } from '@/components/page-header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Html5Qrcode, Html5QrcodeScanner, Html5QrcodeScanType } from 'html5-qrcode';
-import { useFirebase, addDocumentNonBlocking } from '@/firebase';
-import { collection } from 'firebase/firestore';
+import { useFirebase, addDocumentNonBlocking, setDocumentNonBlocking } from '@/firebase';
+import { collection, doc } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { v4 as uuidv4 } from 'uuid';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -113,14 +113,14 @@ export default function QRScannerPage() {
     // 2. Generate certificate metadata
     const certId = uuidv4();
     const certHash = await sha256(`${eventId}-${user.uid}-${certId}`);
-    const certificateRef = collection(firestore, 'certificates');
-    addDocumentNonBlocking(certificateRef, {
+    const certificateRef = doc(firestore, 'certificates', certId);
+    setDocumentNonBlocking(certificateRef, {
       uuid: certId,
       hash: certHash,
       eventId: eventId,
       userId: user.uid,
       issueDate: new Date().toISOString(),
-    });
+    }, { merge: false });
 
     toast({
       title: 'Check-in Successful!',

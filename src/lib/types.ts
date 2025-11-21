@@ -33,7 +33,8 @@ export type Attendance = {
 }
 
 export type Certificate = {
-  id: string; // UUID
+  id: string; // This is the doc id, which is the UUID
+  uuid: string; // UUID
   hash: string; // SHA-256
   eventId: string;
   userId: string;

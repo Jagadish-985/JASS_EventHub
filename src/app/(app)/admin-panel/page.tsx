@@ -4,11 +4,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useState } from 'react';
-import { useFirebase, errorEmitter } from '@/firebase';
+import { useFirebase } from '@/firebase';
 import { doc, getDoc } from 'firebase/firestore';
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis, ResponsiveContainer, Tooltip, Legend } from 'recharts';
 import Image from 'next/image';
-import { FirestorePermissionError } from '@/firebase/errors';
+import { FirestorePermissionError, errorEmitter } from '@/firebase';
 
 const mockRoiData = [
   { name: 'Registrations', value: 1250 },
@@ -129,26 +129,25 @@ function CertificateValidator() {
 
     const certRef = doc(firestore, 'certificates', certId);
     
-    getDoc(certRef)
-      .then((certSnap) => {
-        if (certSnap.exists()) {
-          const data = certSnap.data();
-          setResult({ id: certSnap.id, hash: data.hash });
-        } else {
-          setError('Certificate not found.');
-        }
-      })
-      .catch((e) => {
+    // Using getDoc with proper error handling
+    try {
+      const certSnap = await getDoc(certRef);
+       if (certSnap.exists()) {
+        const data = certSnap.data();
+        setResult({ id: certSnap.id, hash: data.hash });
+      } else {
+        setError('Certificate not found.');
+      }
+    } catch (e) {
         const permissionError = new FirestorePermissionError({
           path: certRef.path,
           operation: 'get',
         });
         errorEmitter.emit('permission-error', permissionError);
         setError('An error occurred while validating.');
-      })
-      .finally(() => {
+    } finally {
         setIsLoading(false);
-      });
+    }
   };
 
   return (
