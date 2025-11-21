@@ -12,7 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Calendar, MapPin, Users, Tag, QrCode, UserCheck } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 export default function EventDetailsPage() {
