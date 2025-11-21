@@ -25,7 +25,7 @@ export default function OrganizerDashboardPage() {
   const defaultTab = searchParams.get('tab') || 'my-events';
 
   return (
-    <div className="container mx-auto max-w-5xl animate-in fade-in-50">
+    <div className="container mx-auto max-w-7xl animate-in fade-in-50">
       <PageHeader
         title="Organizer Dashboard"
         description={`Manage your events, ${user?.displayName || 'Organizer'}.`}

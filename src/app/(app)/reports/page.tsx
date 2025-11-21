@@ -1,3 +1,4 @@
+
 'use client';
 import { useState } from 'react';
 import { PageHeader } from '@/components/page-header';
@@ -44,7 +45,7 @@ export default function ReportsPage() {
   };
 
   return (
-    <div className="animate-in fade-in-50">
+    <div className="container mx-auto max-w-7xl animate-in fade-in-50">
       <PageHeader
         title="Report Generation"
         description="Generate comprehensive event reports with a single click."
