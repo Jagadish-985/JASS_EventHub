@@ -11,6 +11,7 @@ import {
   QrCode,
   FileText,
   Home,
+  ShieldCheck,
 } from 'lucide-react';
 import { UserNav } from '@/components/user-nav';
 import { useFirebase } from '@/firebase';
@@ -48,13 +49,13 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         if (userDoc.exists()) {
           setUserRole(userDoc.data()?.role);
         } else {
-          setUserRole(null);
+          // If user doc doesn't exist, sign out and redirect
           await auth.signOut();
-          router.push('/login');
         }
       } catch (error) {
         console.error('Error fetching user role:', error);
         setUserRole(null);
+        await auth.signOut();
       } finally {
         setIsRoleLoading(false);
       }
@@ -62,6 +63,13 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
     fetchUserRole();
   }, [user, isUserLoading, firestore, router, auth]);
+  
+  useEffect(() => {
+    if(!isUserLoading && !user) {
+        router.push('/login');
+    }
+  }, [isUserLoading, user, router]);
+
 
   const handleLogout = async () => {
     await auth.signOut();
@@ -92,7 +100,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     { href: '/reports', label: 'Reports', icon: FileText },
   ];
 
-  const adminLinks = [{ href: '/admin-panel', label: 'Admin Panel', icon: Settings }];
+  const adminLinks = [{ href: '/admin-panel', label: 'Admin Panel', icon: ShieldCheck }];
 
   let navLinks: { href: string; label: string; icon: React.ElementType }[] = [
     { href: '/home', label: 'Home', icon: Home },
@@ -106,56 +114,58 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   }
 
   const SidebarNav = ({ isMobile = false }) => (
-    <nav className={`flex flex-col gap-2 ${isMobile ? 'p-4' : ''}`}>
+    <nav className={`flex h-full flex-col ${isMobile ? 'p-4' : ''}`}>
         <Link
           href="/home"
-          className="mb-4 flex items-center gap-2 text-xl font-bold text-primary"
+          className="mb-6 flex items-center gap-2 text-2xl font-bold text-primary"
         >
           EventHub+
         </Link>
-        {navLinks.map((link) => (
-          <TooltipProvider key={link.href} delayDuration={0}>
-             <Tooltip>
-                <TooltipTrigger asChild>
-                  <Link href={link.href}>
-                    <Button
-                      variant={pathname.startsWith(link.href) ? 'secondary' : 'ghost'}
-                      className="w-full justify-start"
-                    >
-                      <link.icon className="mr-2 h-4 w-4" />
-                      {link.label}
-                    </Button>
-                  </Link>
-                </TooltipTrigger>
-                {!isMobile && <TooltipContent side="right" className="flex items-center gap-4">
-                  {link.label}
-                </TooltipContent>}
-              </Tooltip>
-          </TooltipProvider>
-        ))}
+        <div className="flex-1 space-y-2">
+            {navLinks.map((link) => (
+            <TooltipProvider key={link.href} delayDuration={0}>
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                    <Link href={link.href}>
+                        <Button
+                        variant={pathname.startsWith(link.href) ? 'secondary' : 'ghost'}
+                        className="w-full justify-start text-base"
+                        >
+                        <link.icon className="mr-3 h-5 w-5" />
+                        {link.label}
+                        </Button>
+                    </Link>
+                    </TooltipTrigger>
+                    {!isMobile && <TooltipContent side="right" className="flex items-center gap-4">
+                    {link.label}
+                    </TooltipContent>}
+                </Tooltip>
+            </TooltipProvider>
+            ))}
+        </div>
+        <div className="mt-auto flex flex-col gap-2">
+          <Link href="/profile">
+             <Button variant="ghost" className="w-full justify-start text-base">
+                <User className="mr-3 h-5 w-5" />
+                Profile
+              </Button>
+          </Link>
+          <Button variant="ghost" onClick={handleLogout} className="w-full justify-start text-base">
+            <LogOut className="mr-3 h-5 w-5" />
+            Logout
+          </Button>
+        </div>
       </nav>
   );
 
   return (
-    <div className="flex min-h-screen w-full bg-gray-50 text-gray-900">
-      <aside className="hidden w-64 flex-col border-r bg-white p-4 sm:flex">
+    <div className="flex min-h-screen w-full bg-background text-foreground">
+      <aside className="hidden w-64 flex-col border-r bg-card p-4 lg:flex">
         <SidebarNav />
-        <div className="mt-auto flex flex-col gap-2">
-          <Link href="/profile">
-             <Button variant="ghost" className="w-full justify-start">
-                <User className="mr-2 h-4 w-4" />
-                Profile
-              </Button>
-          </Link>
-          <Button variant="ghost" onClick={handleLogout} className="w-full justify-start">
-            <LogOut className="mr-2 h-4 w-4" />
-            Logout
-          </Button>
-        </div>
       </aside>
       <div className="flex flex-1 flex-col">
-        <header className="sticky top-0 z-40 flex h-16 items-center justify-between border-b bg-white px-6">
-           <div className="sm:hidden">
+        <header className="sticky top-0 z-40 flex h-16 items-center justify-between border-b bg-card px-6">
+           <div className="lg:hidden">
              <Sheet>
               <SheetTrigger asChild>
                 <Button size="icon" variant="outline">
@@ -163,31 +173,17 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                   <span className="sr-only">Toggle Menu</span>
                 </Button>
               </SheetTrigger>
-              <SheetContent side="left" className="w-72 p-0 bg-white">
-                <div className="flex h-full flex-col">
+              <SheetContent side="left" className="w-72 p-0 bg-card">
                   <SidebarNav isMobile={true} />
-                   <div className="mt-auto flex flex-col gap-2 p-4">
-                      <Link href="/profile">
-                         <Button variant="ghost" className="w-full justify-start">
-                            <User className="mr-2 h-4 w-4" />
-                            Profile
-                          </Button>
-                      </Link>
-                      <Button variant="ghost" onClick={handleLogout} className="w-full justify-start">
-                        <LogOut className="mr-2 h-4 w-4" />
-                        Logout
-                      </Button>
-                    </div>
-                </div>
               </SheetContent>
             </Sheet>
            </div>
-           <div className="flex-1 text-center sm:hidden">
-              <Link href="/home" className="text-lg font-bold text-primary">
+           <div className="flex-1 text-center lg:hidden">
+              <Link href="/home" className="text-xl font-bold text-primary">
                 EventHub+
               </Link>
            </div>
-          <div className="hidden flex-1 sm:block" />
+          <div className="hidden flex-1 lg:block" />
           {user && <UserNav user={user} />}
         </header>
         <main className="flex-1 p-4 md:p-6 lg:p-8 overflow-y-auto">
