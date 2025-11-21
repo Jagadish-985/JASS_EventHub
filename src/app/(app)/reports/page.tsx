@@ -1,6 +1,6 @@
 
 'use client';
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { PageHeader } from '@/components/page-header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -13,12 +13,17 @@ import { useMemoFirebase } from '@/firebase/provider';
 import type { Event } from '@/lib/types';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
 
 export default function ReportsPage() {
   const { firestore, user, userRole } = useFirebase();
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
   const [reportData, setReportData] = useState<any>(null);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [notes, setNotes] = useState('');
+  const reportRef = useRef<HTMLDivElement>(null);
+
 
   const eventsQuery = useMemoFirebase(() => {
     if (!user) return null;
@@ -30,25 +35,90 @@ export default function ReportsPage() {
 
   const { data: events, isLoading: isLoadingEvents } = useCollection<Event>(eventsQuery);
 
-  const handleGenerateReport = () => {
+  const handleGenerateReport = async () => {
     if (!selectedEventId) return;
     setIsGenerating(true);
+
     // Mocking report generation
-    setTimeout(() => {
-      const event = events?.find(e => e.id === selectedEventId);
-      setReportData({
-        eventName: event?.name,
-        attendance: Math.floor(Math.random() * 200) + 50,
-        photos: Math.floor(Math.random() * 50) + 10,
-        notes: "The event was a great success with high engagement.",
-        procurementCost: (Math.random() * 5000 + 1000).toFixed(2),
-      });
-      setIsGenerating(false);
-    }, 1500);
+    const event = events?.find(e => e.id === selectedEventId);
+    const data = {
+      eventName: event?.name,
+      eventDate: new Date(event?.startTime || Date.now()).toLocaleDateString(),
+      location: event?.location,
+      organizer: user?.displayName,
+      attendance: Math.floor(Math.random() * 200) + 50,
+      photos: Math.floor(Math.random() * 50) + 10,
+      notes: notes || "The event was a great success with high engagement.",
+      procurementCost: (Math.random() * 5000 + 1000).toFixed(2),
+    };
+    setReportData(data);
+
+    // Wait for state to update and UI to render the report preview
+    setTimeout(async () => {
+        if(!reportRef.current) {
+            setIsGenerating(false);
+            return;
+        };
+
+        try {
+            const canvas = await html2canvas(reportRef.current, { scale: 2 });
+            const imgData = canvas.toDataURL('image/png');
+            
+            const pdf = new jsPDF({
+                orientation: 'portrait',
+                unit: 'mm',
+                format: 'a4',
+            });
+
+            const pdfWidth = pdf.internal.pageSize.getWidth();
+            const pdfHeight = pdf.internal.pageSize.getHeight();
+            
+            pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+            pdf.save(`EventReport-${event?.name?.replace(/\s/g, '_')}.pdf`);
+        } catch (error) {
+            console.error("Failed to generate PDF:", error);
+        } finally {
+            setIsGenerating(false);
+        }
+    }, 500); // Small delay to ensure the hidden div is rendered
   };
 
   return (
     <div className="animate-in fade-in-50">
+        {/* Hidden Div for PDF Generation */}
+        <div className="fixed -left-[9999px] top-0 opacity-0 pointer-events-none">
+            <div ref={reportRef} className="w-[210mm] h-[297mm] p-8 bg-white text-black flex flex-col font-sans">
+                {reportData && (
+                     <div className="w-full h-full p-4 flex flex-col">
+                        <header className="text-center border-b-2 border-gray-700 pb-4">
+                            <h1 className="text-4xl font-bold text-gray-800">Event Report</h1>
+                            <h2 className="text-2xl font-semibold text-primary">{reportData.eventName}</h2>
+                        </header>
+                        <main className="flex-1 mt-8 space-y-8">
+                            <div className="grid grid-cols-2 gap-4 text-lg">
+                                <div className="p-4 bg-gray-100 rounded-lg"><strong>Date:</strong> {reportData.eventDate}</div>
+                                <div className="p-4 bg-gray-100 rounded-lg"><strong>Location:</strong> {reportData.location}</div>
+                                <div className="p-4 bg-gray-100 rounded-lg"><strong>Organizer:</strong> {reportData.organizer}</div>
+                                <div className="p-4 bg-gray-100 rounded-lg"><strong>Total Attendance:</strong> {reportData.attendance}</div>
+                                <div className="p-4 bg-gray-100 rounded-lg"><strong>Geotagged Photos:</strong> {reportData.photos}</div>
+                                <div className="p-4 bg-gray-100 rounded-lg"><strong>Procurement Cost:</strong> ${reportData.procurementCost}</div>
+                            </div>
+
+                            <div className="mt-6">
+                                <h3 className="text-xl font-bold border-b border-gray-400 pb-2 mb-2 text-primary">Notes & Observations</h3>
+                                <p className="text-base text-gray-700 whitespace-pre-wrap">{reportData.notes}</p>
+                            </div>
+                        </main>
+                        <footer className="mt-auto text-center pt-4 border-t border-gray-300">
+                            <p className="text-2xl font-bold text-primary">EventHub+</p>
+                            <p className="text-sm text-gray-500">Generated on {new Date().toLocaleDateString()}</p>
+                        </footer>
+                    </div>
+                )}
+            </div>
+        </div>
+
+
       <PageHeader
         title="Report Generation"
         description="Generate comprehensive event reports with a single click."
@@ -83,7 +153,7 @@ export default function ReportsPage() {
             </div>
              <div className="space-y-2">
                 <label htmlFor="notes" className="text-sm font-medium">Notes</label>
-                <Textarea id="notes" placeholder="Add any notes about the event..." />
+                <Textarea id="notes" placeholder="Add any notes about the event..." value={notes} onChange={(e) => setNotes(e.target.value)} />
             </div>
 
             <Button className="w-full" onClick={handleGenerateReport} disabled={!selectedEventId || isGenerating}>
@@ -99,7 +169,7 @@ export default function ReportsPage() {
             <CardDescription>{reportData ? 'Here is a summary of your event.' : 'Select an event to begin.'}</CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col items-center justify-center text-center text-muted-foreground h-full min-h-[300px]">
-            {isGenerating ? (
+            {isGenerating && !reportData ? (
               <div className="flex flex-col items-center gap-2">
                 <Loader2 className="h-10 w-10 animate-spin text-primary" />
                 <p>Compiling your report...</p>
@@ -130,6 +200,12 @@ export default function ReportsPage() {
                     <h4 className="font-semibold">Procurement Cost</h4>
                     <p className="text-sm text-muted-foreground p-3 bg-muted/50 rounded-lg mt-1">${reportData.procurementCost}</p>
                 </div>
+                 {isGenerating && reportData && (
+                    <div className="flex items-center gap-2 text-primary pt-4">
+                        <Loader2 className="h-5 w-5 animate-spin" />
+                        <p>Downloading PDF...</p>
+                    </div>
+                 )}
               </div>
             ) : (
               <p>Your report preview will appear here.</p>
