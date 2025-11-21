@@ -222,18 +222,23 @@ function AttendanceList() {
 
         const fetchAttendees = async () => {
             setIsLoading(true);
-            setAttendees([]);
             try {
-                // 1. Get all attendance records for the selected event
                 const attendanceQuery = query(collection(firestore, 'attendance'), where('eventId', '==', selectedEventId));
                 const attendanceSnap = await getDocs(attendanceQuery);
                 const userIds = attendanceSnap.docs.map(doc => doc.data().userId);
 
-                // 2. If there are attendees, fetch their user profiles
                 if (userIds.length > 0) {
-                    const usersQuery = query(collection(firestore, 'users'), where(documentId(), 'in', userIds.slice(0, 30)));
-                    const usersSnap = await getDocs(usersQuery);
-                    const usersData = usersSnap.docs.map(doc => ({ ...doc.data(), id: doc.id } as User));
+                    const usersData: User[] = [];
+                    // Firestore 'in' query is limited to 30 items per request.
+                    // We chunk the userIds array to handle more than 30 attendees.
+                    for (let i = 0; i < userIds.length; i += 30) {
+                        const chunk = userIds.slice(i, i + 30);
+                        const usersQuery = query(collection(firestore, 'users'), where(documentId(), 'in', chunk));
+                        const usersSnap = await getDocs(usersQuery);
+                        usersSnap.forEach(doc => {
+                           usersData.push({ ...doc.data(), id: doc.id } as User)
+                        });
+                    }
                     setAttendees(usersData);
                 } else {
                     setAttendees([]);
@@ -360,5 +365,3 @@ function FreeSectionFinder() {
         </Card>
     );
 }
-
-    
