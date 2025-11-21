@@ -158,7 +158,7 @@ export default function ReportsPage() {
 
             <Button className="w-full" onClick={handleGenerateReport} disabled={!selectedEventId || isGenerating}>
               {isGenerating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FileDown className="mr-2 h-4 w-4" />}
-              {isGenerating ? 'Generating...' : 'Generate PDF Report'}
+              {isGenerating ? 'Generating...' : 'Generate and Download PDF Report'}
             </Button>
           </CardContent>
         </Card>
@@ -216,3 +216,5 @@ export default function ReportsPage() {
     </div>
   );
 }
+
+    
