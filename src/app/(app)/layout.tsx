@@ -2,22 +2,27 @@
 import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
-  Home,
   Calendar,
   LayoutDashboard,
-  QrCode,
-  FileText,
-  BarChart2,
-  Users,
   LogOut,
+  PanelLeft,
   Settings,
   User,
+  QrCode,
+  FileText,
 } from 'lucide-react';
 import { UserNav } from '@/components/user-nav';
 import { useFirebase } from '@/firebase';
 import { useEffect, useState } from 'react';
 import { doc, getDoc } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
+import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -41,10 +46,15 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         if (userDoc.exists()) {
           setUserRole(userDoc.data()?.role);
         } else {
+          // If no user doc, maybe they signed up but doc creation failed.
+          // For now, treat as no role. A robust app might try to create the doc.
           setUserRole(null);
+          // Log out the user if their document doesn't exist to prevent being stuck.
+          await auth.signOut();
+          router.push('/login');
         }
       } catch (error) {
-        console.error("Error fetching user role:", error);
+        console.error('Error fetching user role:', error);
         setUserRole(null);
       } finally {
         setIsRoleLoading(false);
@@ -52,7 +62,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     };
 
     fetchUserRole();
-  }, [user, isUserLoading, firestore, router]);
+  }, [user, isUserLoading, firestore, router, auth]);
 
   const handleLogout = async () => {
     await auth.signOut();
@@ -63,8 +73,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   if (isLoading) {
     return (
-      <div className="flex h-screen w-screen items-center justify-center">
-        <p>Loading...</p>
+      <div className="flex h-screen w-screen items-center justify-center bg-background">
+        <p className="text-foreground">Loading your EventHub+ experience...</p>
       </div>
     );
   }
@@ -77,17 +87,15 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const studentLinks = [
     { href: '/student-dashboard', label: 'Dashboard', icon: LayoutDashboard },
   ];
-  
+
   const organizerLinks = [
     { href: '/organizer-dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { href: '/reports', label: 'Reports', icon: FileText },
   ];
-  
-  const adminLinks = [
-    { href: '/admin-panel', label: 'Admin Panel', icon: Settings },
-  ];
 
-  let navLinks: { href: string; label: string; icon: React.ElementType }[] = [];
+  const adminLinks = [{ href: '/admin-panel', label: 'Admin Panel', icon: Settings }];
+
+  let navLinks: { href: string; label:string; icon: React.ElementType }[] = [];
   if (userRole === 'student') {
     navLinks = [...studentLinks, ...commonLinks];
   } else if (userRole === 'organizer') {
@@ -96,48 +104,92 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     navLinks = [...adminLinks, ...organizerLinks, ...commonLinks];
   }
 
+  const SidebarNav = ({ isMobile = false }) => (
+    <TooltipProvider delayDuration={0}>
+      <nav className={`flex flex-col gap-2 ${isMobile ? 'p-4' : ''}`}>
+        <Link
+          href="/home"
+          className="mb-4 flex items-center gap-2 text-lg font-bold text-primary"
+        >
+          EventHub+
+        </Link>
+        {navLinks.map((link) => (
+          <Tooltip key={link.href}>
+            <TooltipTrigger asChild>
+              <Link href={link.href}>
+                <Button
+                  variant={pathname.startsWith(link.href) ? 'secondary' : 'ghost'}
+                  className="w-full justify-start"
+                >
+                  <link.icon className="mr-2 h-4 w-4" />
+                  {link.label}
+                </Button>
+              </Link>
+            </TooltipTrigger>
+            <TooltipContent side="right" className="flex items-center gap-4">
+              {link.label}
+            </TooltipContent>
+          </Tooltip>
+        ))}
+      </nav>
+    </TooltipProvider>
+  );
 
   return (
-    <div className="flex min-h-screen w-full bg-background">
+    <div className="flex min-h-screen w-full bg-background text-foreground">
       <aside className="hidden w-64 flex-col border-r bg-card p-4 sm:flex">
-        <nav className="flex flex-col gap-2">
-          <Link href="/home" className="mb-4 flex items-center gap-2 font-bold text-lg">
-            EventHub+
-          </Link>
-          {navLinks.map((link) => (
-            <Link key={link.href} href={link.href}>
-              <Button
-                variant={pathname === link.href ? 'secondary' : 'ghost'}
-                className="w-full justify-start"
-              >
-                <link.icon className="mr-2 h-4 w-4" />
-                {link.label}
-              </Button>
-            </Link>
-          ))}
-        </nav>
+        <SidebarNav />
         <div className="mt-auto flex flex-col gap-2">
-           <Button variant="ghost" className="w-full justify-start">
-              <User className="mr-2 h-4 w-4" />
-              Profile
-            </Button>
-            <Button variant="ghost" onClick={handleLogout} className="w-full justify-start">
-              <LogOut className="mr-2 h-4 w-4" />
-              Logout
-            </Button>
+          <Link href="/profile">
+             <Button variant="ghost" className="w-full justify-start">
+                <User className="mr-2 h-4 w-4" />
+                Profile
+              </Button>
+          </Link>
+          <Button variant="ghost" onClick={handleLogout} className="w-full justify-start">
+            <LogOut className="mr-2 h-4 w-4" />
+            Logout
+          </Button>
         </div>
       </aside>
       <div className="flex flex-1 flex-col">
-        <header className="flex h-16 items-center justify-between border-b bg-card px-6">
-          <div className="sm:hidden">
-            <Link href="/home" className="font-bold text-lg">
-              EventHub+
-            </Link>
-          </div>
-          <div className="flex-1" />
-           {user && <UserNav user={user} />}
+        <header className="sticky top-0 z-40 flex h-16 items-center justify-between border-b bg-card px-6">
+           <div className="sm:hidden">
+             <Sheet>
+              <SheetTrigger asChild>
+                <Button size="icon" variant="outline">
+                  <PanelLeft className="h-5 w-5" />
+                  <span className="sr-only">Toggle Menu</span>
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="left" className="w-72 p-0">
+                <div className="flex h-full flex-col">
+                  <SidebarNav isMobile={true} />
+                   <div className="mt-auto flex flex-col gap-2 p-4">
+                      <Link href="/profile">
+                         <Button variant="ghost" className="w-full justify-start">
+                            <User className="mr-2 h-4 w-4" />
+                            Profile
+                          </Button>
+                      </Link>
+                      <Button variant="ghost" onClick={handleLogout} className="w-full justify-start">
+                        <LogOut className="mr-2 h-4 w-4" />
+                        Logout
+                      </Button>
+                    </div>
+                </div>
+              </SheetContent>
+            </Sheet>
+           </div>
+           <div className="flex-1 text-center sm:hidden">
+              <Link href="/home" className="text-lg font-bold text-primary">
+                EventHub+
+              </Link>
+           </div>
+          <div className="hidden flex-1 sm:block" />
+          {user && <UserNav user={user} />}
         </header>
-        <main className="flex-1 p-6">
+        <main className="flex-1 p-4 md:p-6 lg:p-8">
           {children}
         </main>
       </div>

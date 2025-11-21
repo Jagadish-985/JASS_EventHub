@@ -12,7 +12,9 @@ import {
   ShieldCheck,
   QrCode,
   Map,
-  FileText
+  FileText,
+  Search,
+  ChevronRight
 } from 'lucide-react';
 import Image from 'next/image';
 
@@ -32,9 +34,9 @@ export default function HomePage() {
 
 function Header() {
   return (
-    <header className="sticky top-0 z-50 flex h-16 items-center justify-between border-b bg-background/95 px-4 backdrop-blur lg:px-6">
-      <Link href="/home" className="flex items-center gap-2 font-bold text-lg">
-        RUAS EventHub+
+    <header className="sticky top-0 z-50 flex h-16 items-center justify-between border-b border-border/40 bg-background/95 px-4 backdrop-blur-sm lg:px-6">
+      <Link href="/home" className="flex items-center gap-2 font-bold text-lg text-primary">
+        EventHub+
       </Link>
       <nav className="hidden items-center gap-6 text-sm font-medium lg:flex">
         <Link href="/events" className="transition-colors hover:text-primary">
@@ -46,19 +48,16 @@ function Header() {
         <Link href="/organizer-dashboard" className="transition-colors hover:text-primary">
           Organizer Dashboard
         </Link>
-        <Link href="/qr-scanner" className="transition-colors hover:text-primary">
-          QR Scanner
-        </Link>
-        <Link href="/reports" className="transition-colors hover:text-primary">
-          Reports
-        </Link>
         <Link href="/admin-panel" className="transition-colors hover:text-primary">
           Admin Panel
         </Link>
       </nav>
-      <div className="flex items-center gap-2">
-        <Button asChild>
+      <div className="flex items-center gap-4">
+        <Button asChild variant="ghost" size="sm">
           <Link href="/login">Login</Link>
+        </Button>
+         <Button asChild size="sm">
+          <Link href="/signup">Sign Up</Link>
         </Button>
       </div>
     </header>
@@ -67,27 +66,22 @@ function Header() {
 
 function HeroSection() {
   return (
-    <section className="relative w-full py-20 md:py-32 lg:py-40">
-       <Image
-          src="https://picsum.photos/seed/campus-blur/1920/1080"
-          alt="Blurred campus photo"
-          layout="fill"
-          objectFit="cover"
-          className="absolute inset-0 -z-10 h-full w-full object-cover blur-sm brightness-50"
-          data-ai-hint="blurred campus photo"
-        />
-      <div className="container px-4 text-center text-white">
-        <h1 className="text-4xl font-bold tracking-tighter sm:text-5xl md:text-6xl lg:text-7xl">
-          RUAS EventHub+: The Smart Event Ecosystem
+    <section className="relative w-full py-24 md:py-32 lg:py-48 bg-primary/5">
+      <div className="container px-4 text-center">
+        <div className="bg-accent/10 text-accent-foreground mx-auto mb-4 inline-block rounded-full border border-accent/20 px-4 py-1 text-sm font-medium">
+          The Future of University Events is Here
+        </div>
+        <h1 className="text-4xl font-bold tracking-tighter text-primary sm:text-5xl md:text-6xl lg:text-7xl">
+          RUAS EventHub+
         </h1>
-        <p className="mx-auto mt-4 max-w-[700px] text-lg text-gray-200 md:text-xl">
-          Discover. Register. Attend. Track. Verify. All in one place.
+        <p className="mx-auto mt-4 max-w-[700px] text-lg text-muted-foreground md:text-xl">
+          Discover, register, attend, and verify your event participation—all in one seamless, intelligent platform.
         </p>
-        <div className="mt-8 space-x-4">
+        <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
           <Button asChild size="lg">
-            <Link href="/events">Explore Events</Link>
+            <Link href="/events">Explore Events <ChevronRight className="ml-2 h-5 w-5" /></Link>
           </Button>
-          <Button asChild variant="secondary" size="lg">
+          <Button asChild variant="outline" size="lg">
             <Link href="/login">Organizer Login</Link>
           </Button>
         </div>
@@ -97,27 +91,32 @@ function HeroSection() {
 }
 
 const features = [
-    { icon: Calendar, title: "Unified Event Discovery" },
-    { icon: FileCheck, title: "One-Tap Registration" },
-    { icon: QrCode, title: "QR Attendance System" },
-    { icon: ShieldCheck, title: "Blockchain-Style Certificates" },
-    { icon: BrainCircuit, title: "EventBuddy Recommendations" },
-    { icon: BarChart, title: "Skill Gap Insights" },
-    { icon: FileText, title: "Automated Event Reports" },
-    { icon: Map, title: "Map-Based Event View" },
+    { icon: Search, title: "Unified Event Discovery", description: "Find all university events in one centralized, searchable hub." },
+    { icon: FileCheck, title: "One-Tap Registration", description: "Register for any event instantly with a single click." },
+    { icon: QrCode, title: "QR Attendance System", description: "Check in to events quickly and securely using a simple QR scan." },
+    { icon: ShieldCheck, title: "Secure Certificates", description: "Receive and manage verifiable, tamper-proof event certificates." },
+    { icon: BrainCircuit, title: "AI Recommendations", description: "Get personalized event suggestions from our smart EventBuddy AI." },
+    { icon: BarChart, title: "Skill Gap Insights", description: "Administrators gain valuable insights into campus skill trends." },
+    { icon: FileText, title: "Automated Reports", description: "Organizers can generate detailed event reports in seconds." },
+    { icon: Map, title: "Map-Based Event View", description: "Visualize event locations across campus with an interactive map." },
 ]
 
 function FeaturesSection() {
     return (
-        <section className="w-full py-20 md:py-32">
+        <section id="features" className="w-full bg-background py-20 md:py-32">
             <div className="container px-4">
-                <div className="grid gap-8 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+                <div className="text-center mb-12">
+                     <h2 className="text-3xl font-bold tracking-tighter text-primary sm:text-4xl">A Smarter Way to Experience Campus Life</h2>
+                    <p className="mx-auto mt-3 max-w-2xl text-muted-foreground md:text-lg">EventHub+ is more than just a calendar. It's an intelligent ecosystem designed to enhance every aspect of your university event experience.</p>
+                </div>
+                <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
                     {features.map((feature) => (
-                        <div key={feature.title} className="flex flex-col items-center text-center">
-                            <div className="mb-4 rounded-full bg-primary/10 p-4 text-primary">
-                                <feature.icon className="h-8 w-8" />
+                        <div key={feature.title} className="flex flex-col items-start text-left p-6 rounded-xl border border-border/50 bg-card hover:shadow-lg transition-shadow">
+                            <div className="mb-4 rounded-lg bg-primary/10 p-3 text-primary">
+                                <feature.icon className="h-7 w-7" />
                             </div>
-                            <h3 className="text-lg font-semibold">{feature.title}</h3>
+                            <h3 className="text-lg font-semibold text-primary">{feature.title}</h3>
+                            <p className="mt-1 text-sm text-muted-foreground">{feature.description}</p>
                         </div>
                     ))}
                 </div>
@@ -129,9 +128,9 @@ function FeaturesSection() {
 
 function AboutSection() {
     return (
-        <section className="w-full bg-muted py-20 md:py-32">
+        <section className="w-full bg-primary/5 py-20 md:py-32">
             <div className="container px-4 text-center">
-                <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl">
+                <h2 className="text-3xl font-bold tracking-tighter text-primary sm:text-4xl">
                     About RUAS EventHub+
                 </h2>
                 <p className="mx-auto mt-4 max-w-[700px] text-muted-foreground md:text-xl">
@@ -144,18 +143,18 @@ function AboutSection() {
 
 function Footer() {
   return (
-    <footer className="flex w-full shrink-0 flex-col items-center gap-2 border-t px-4 py-6 sm:flex-row md:px-6">
+    <footer className="flex w-full shrink-0 flex-col items-center gap-2 border-t border-border/40 px-4 py-6 sm:flex-row md:px-6">
       <p className="text-xs text-muted-foreground">
         &copy; 2025 RUAS EventHub+. All rights reserved.
       </p>
       <nav className="flex gap-4 sm:ml-auto sm:gap-6">
-        <Link href="#" className="text-xs hover:underline underline-offset-4">
+        <Link href="#" className="text-xs hover:underline underline-offset-4 text-muted-foreground hover:text-primary">
           Privacy Policy
         </Link>
-        <Link href="#" className="text-xs hover:underline underline-offset-4">
+        <Link href="#" className="text-xs hover:underline underline-offset-4 text-muted-foreground hover:text-primary">
           Contact
         </Link>
-        <Link href="#" className="text-xs hover:underline underline-offset-4">
+        <Link href="#" className="text-xs hover:underline underline-offset-4 text-muted-foreground hover:text-primary">
           Terms
         </Link>
       </nav>
