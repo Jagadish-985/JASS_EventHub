@@ -77,7 +77,7 @@ export default function LoginPage() {
   if (!role) {
     return (
         <div className="flex min-h-screen items-center justify-center p-4 bg-background">
-            <Card className="w-full max-w-sm">
+            <Card className="w-full max-w-sm mx-auto">
                 <CardHeader>
                     <CardTitle className="text-2xl">Select Your Role</CardTitle>
                     <CardDescription>
@@ -96,7 +96,7 @@ export default function LoginPage() {
 
   return (
     <div className="flex min-h-screen items-center justify-center p-4 bg-background">
-      <Card className="w-full max-w-sm">
+      <Card className="w-full max-w-sm mx-auto">
         <CardHeader>
           <CardTitle className="text-2xl">Login as {role.charAt(0).toUpperCase() + role.slice(1)}</CardTitle>
           <CardDescription>
