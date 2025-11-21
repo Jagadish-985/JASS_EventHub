@@ -1,3 +1,4 @@
+
 'use client';
 import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -193,7 +194,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           {user && <UserNav user={user} />}
         </header>
         <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8">
-            <div className="container mx-auto max-w-7xl">
+            <div className="mx-auto w-full max-w-7xl">
               {children}
             </div>
         </main>
