@@ -91,6 +91,8 @@ function CreateEventForm() {
 
     const formData = new FormData(e.currentTarget);
     const eventId = uuidv4();
+    const imageUrl = formData.get('imageUrl') as string;
+
     const eventData: Omit<Event, 'id'> = {
       name: formData.get('name') as string,
       description: formData.get('description') as string,
@@ -100,7 +102,7 @@ function CreateEventForm() {
       category: formData.get('category') as string,
       tags: (formData.get('tags') as string).split(',').map(tag => tag.trim()),
       organizerId: user.uid,
-      image: `https://picsum.photos/seed/${eventId}/600/400`,
+      image: imageUrl || `https://picsum.photos/seed/${eventId}/600/400`,
     };
 
     const eventRef = doc(firestore, 'events', eventId);
@@ -129,6 +131,7 @@ function CreateEventForm() {
           <Input name="venue" placeholder="Venue" required />
           <Input name="category" placeholder="Category (e.g., Technology)" />
           <Input name="tags" placeholder="Tags (comma-separated, e.g., AI, Web)" />
+          <Input name="imageUrl" placeholder="Image URL (e.g., /1.jpg) - Optional" />
           <Button type="submit" disabled={isLoading}>
             {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Create Event
@@ -440,3 +443,5 @@ function FreeSectionFinder() {
         </Card>
     );
 }
+
+    
