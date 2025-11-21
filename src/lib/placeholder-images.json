@@ -1,3 +1,52 @@
 {
-  "placeholderImages": []
+  "placeholderImages": [
+    {
+      "id": "event-ai-conference",
+      "description": "An AI conference with a futuristic theme.",
+      "imageUrl": "https://images.unsplash.com/photo-1582203422342-1541a90a0103?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw5fHx0ZWNobm9sb2d5JTIwY29uZmVyZW5jZXxlbnwwfHx8fDE3NjM2NTg4ODN8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "technology conference"
+    },
+    {
+      "id": "event-design-workshop",
+      "description": "A collaborative design workshop.",
+      "imageUrl": "https://images.unsplash.com/photo-1480355781839-51097c7d4f9f?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw4fHxjcmVhdGl2ZSUyMHdvcmtzaG9wfGVufDB8fHx8MTc2MzY2ODI1NXww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "creative workshop"
+    },
+    {
+      "id": "event-career-fair",
+      "description": "A busy career fair with many attendees.",
+      "imageUrl": "https://images.unsplash.com/photo-1521791136064-7986c2920216?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwzfHxqb2IlMjBmYWlyfGVufDB8fHx8MTc2MzcxMTcwN3ww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "job fair"
+    },
+    {
+      "id": "event-hackathon",
+      "description": "Developers collaborating at a hackathon.",
+      "imageUrl": "https://images.unsplash.com/photo-1558301204-e3226482a77b?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw4fHxjb2RpbmclMjBldmVudHxlbnwwfHx8fDE3NjM3MTE3MDd8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "coding event"
+    },
+    {
+      "id": "event-guest-lecture",
+      "description": "A speaker giving a lecture to an audience.",
+      "imageUrl": "https://images.unsplash.com/photo-1515168985652-8454bcc8fcaf?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw4fHx1bml2ZXJzaXR5JTIwbGVjdHVyZXxlbnwwfHx8fDE3NjM2NzE2NTh8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "university lecture"
+    },
+    {
+      "id": "certificate-bg-1",
+      "description": "Abstract background for a certificate.",
+      "imageUrl": "https://images.unsplash.com/photo-1605106702842-01a887a31122?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw0fHxhYnN0cmFjdCUyMHBhdHRlcm58ZW58MHx8fHwxNzYzNjcxMTE2fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "abstract pattern"
+    },
+    {
+      "id": "certificate-bg-2",
+      "description": "Geometric background for a certificate.",
+      "imageUrl": "https://images.unsplash.com/photo-1635424240719-f62cec4775cc?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw5fHxnZW9tZXRyaWMlMjBkZXNpZ258ZW58MHx8fHwxNzYzNzExNzA3fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "geometric design"
+    },
+    {
+      "id": "user-avatar",
+      "description": "User profile picture.",
+      "imageUrl": "https://images.unsplash.com/photo-1531123414780-f74242c2b052?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxMHx8cGVyc29uJTIwcG9ydHJhaXR8ZW58MHx8fHwxNzYzNjkxOTc2fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "person portrait"
+    }
+  ]
 }
