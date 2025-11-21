@@ -101,7 +101,11 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     { href: '/reports', label: 'Reports', icon: FileText },
   ];
 
-  const adminLinks = [{ href: '/admin-panel', label: 'Admin Panel', icon: ShieldCheck }];
+  const adminLinks = [
+      { href: '/admin-panel', label: 'Admin Panel', icon: ShieldCheck },
+      { href: '/organizer-dashboard', label: 'Event Management', icon: LayoutDashboard },
+      { href: '/reports', label: 'Reports', icon: FileText },
+  ];
 
   let navLinks: { href: string; label: string; icon: React.ElementType }[] = [
     { href: '/home', label: 'Home', icon: Home },
@@ -111,7 +115,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   } else if (userRole === 'organizer') {
     navLinks = [...navLinks, ...organizerLinks, ...commonLinks];
   } else if (userRole === 'admin') {
-    navLinks = [...navLinks, ...adminLinks, ...organizerLinks, ...commonLinks];
+    navLinks = [...navLinks, ...adminLinks, ...commonLinks];
   }
 
   const SidebarNav = ({ isMobile = false }) => (
