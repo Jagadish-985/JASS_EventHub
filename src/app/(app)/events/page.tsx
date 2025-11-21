@@ -1,13 +1,15 @@
 'use client'
+import Link from 'next/link';
 import { PageHeader } from '@/components/page-header';
 import { Input } from '@/components/ui/input';
-import { Search } from 'lucide-react';
+import { PlusCircle, Search } from 'lucide-react';
 import { EventCard } from '@/components/event-card';
 import { useFirebase } from '@/firebase';
 import { useCollection } from '@/firebase/firestore/use-collection';
 import { collection } from 'firebase/firestore';
 import { useMemoFirebase } from '@/firebase/provider';
 import { Event } from '@/lib/types';
+import { Button } from '@/components/ui/button';
 
 export default function EventsPage() {
   const { firestore, user } = useFirebase();
@@ -27,9 +29,17 @@ export default function EventsPage() {
         title="Discover Events"
         description="Browse and search for events that match your interests."
       >
-        <div className="relative w-full max-w-sm">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input placeholder="Search events..." className="pl-10" />
+        <div className="flex items-center gap-2">
+          <div className="relative w-full max-w-sm">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input placeholder="Search events..." className="pl-10" />
+          </div>
+          <Button asChild>
+            <Link href="/events/new">
+              <PlusCircle className="mr-2 h-4 w-4" />
+              Create Event
+            </Link>
+          </Button>
         </div>
       </PageHeader>
       

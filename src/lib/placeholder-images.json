@@ -31,6 +31,12 @@
       "imageHint": "university lecture"
     },
     {
+      "id": "event-placeholder",
+      "description": "Generic event placeholder image.",
+      "imageUrl": "https://images.unsplash.com/photo-1763224810010-4e5d23f261af?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw1fHxldmVudCUyMHBob3RvfGVufDB8fHx8MTc2MzcxMjQ4MHww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "event photo"
+    },
+    {
       "id": "certificate-bg-1",
       "description": "Abstract background for a certificate.",
       "imageUrl": "https://images.unsplash.com/photo-1605106702842-01a887a31122?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw0fHxhYnN0cmFjdCUyMHBhdHRlcm58ZW58MHx8fHwxNzYzNjcxMTE2fDA&ixlib=rb-4.1.0&q=80&w=1080",

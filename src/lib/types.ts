@@ -9,13 +9,16 @@ export type User = {
 
 export type Event = {
   id: string;
-  title: string;
-  category: string;
-  date: string;
-  location: string;
+  name: string;
   description: string;
-  image: string;
-  tags: string[];
+  location: string;
+  startTime: string; // Changed from date
+  endTime: string; // Added
+  organizerId: string; // Added
+  tagIds?: string[]; // Added
+  image?: string; // Made optional
+  category?: string; // Made optional
+  tags?: string[]; // Made optional
 };
 
 export type Certificate = {
