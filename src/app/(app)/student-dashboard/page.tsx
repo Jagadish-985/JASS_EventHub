@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useFirebase } from '@/firebase';
 import { useCollection } from '@/firebase/firestore/use-collection';
+import { useDoc } from '@/firebase/firestore/use-doc';
 import { collection, query, where, getDocs, doc, documentId } from 'firebase/firestore';
 import { useMemoFirebase } from '@/firebase/provider';
 import type { Event, Certificate } from '@/lib/types';
@@ -127,35 +128,37 @@ function MyRegistrations() {
   );
 }
 
-function CertificateEntry({ cert }: { cert: Certificate & { event?: Event } }) {
-  const { user } = useFirebase();
+function CertificateEntry({ certificate }: { certificate: Certificate }) {
+  const { user, firestore } = useFirebase();
   const [isDownloading, setIsDownloading] = useState(false);
   const certificateRef = useRef<HTMLDivElement>(null);
 
+  const eventRef = useMemoFirebase(
+    () => (firestore ? doc(firestore, 'events', certificate.eventId) : null),
+    [firestore, certificate.eventId]
+  );
+  const { data: event, isLoading: isLoadingEvent } = useDoc<Event>(eventRef);
+
   const handleDownload = async () => {
-    if (!certificateRef.current || !cert.event) return;
+    if (!certificateRef.current || !event) return;
     setIsDownloading(true);
 
     try {
         const canvas = await html2canvas(certificateRef.current, {
-            scale: 3, // Increase scale for higher resolution
+            scale: 3,
             useCORS: true,
             backgroundColor: '#ffffff',
         });
-
         const imgData = canvas.toDataURL('image/png');
-        
         const pdf = new jsPDF({
             orientation: 'landscape',
             unit: 'mm',
             format: 'a4',
         });
-
         const pdfWidth = pdf.internal.pageSize.getWidth();
         const pdfHeight = pdf.internal.pageSize.getHeight();
-        
         pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-        pdf.save(`Certificate-${cert.event.name.replace(/\s+/g, '_')}.pdf`);
+        pdf.save(`Certificate-${event.name.replace(/\s+/g, '_')}.pdf`);
     } catch (error) {
         console.error("Failed to download certificate:", error);
     } finally {
@@ -165,48 +168,47 @@ function CertificateEntry({ cert }: { cert: Certificate & { event?: Event } }) {
 
   return (
     <>
-      {/* Hidden div for PDF generation */}
       <div className="fixed -left-[9999px] top-0 opacity-0 pointer-events-none">
-          <div 
-              ref={certificateRef} 
-              className="w-[297mm] h-[210mm] p-10 bg-white text-black flex flex-col justify-between items-center font-serif"
-              style={{ fontFamily: "'Times New Roman', Times, serif" }}
-          >
-              <div className="w-full h-full border-8 border-blue-900 p-8 flex flex-col items-center text-center relative">
-                 <div className="absolute top-8 right-8 text-blue-900 font-bold text-3xl">
-                    EventHub+
-                 </div>
-                 <h1 className="text-6xl font-bold text-blue-900 mt-24">Certificate of Attendance</h1>
-                 <p className="text-2xl mt-12">This is to certify that</p>
-                 <p className="text-5xl font-semibold mt-6 italic text-gray-800">{user?.displayName || 'Attendee'}</p>
-                 <div className="w-1/2 border-b-2 border-gray-400 mt-6"></div>
-                 <p className="text-2xl mt-8">has successfully attended the event</p>
-                 <h2 className="text-4xl font-bold mt-4 text-blue-800">{cert.event?.name}</h2>
-                 <div className="mt-auto flex justify-between w-full text-sm text-gray-600">
-                    <div>
-                        <p className="font-semibold border-t-2 border-gray-400 pt-2">Event Organizer</p>
-                        <p>RUAS</p>
-                    </div>
-                    <div>
-                        <p>Issued on: {new Date(cert.issueDate).toLocaleDateString()}</p>
-                        <p className="text-xs mt-1 break-all">Certificate ID: {cert.id}</p>
-                    </div>
-                 </div>
+        <div 
+          ref={certificateRef} 
+          className="w-[297mm] h-[210mm] p-10 bg-white text-black flex flex-col justify-between items-center"
+          style={{ fontFamily: "'Times New Roman', Times, serif" }}
+        >
+          <div className="w-full h-full border-8 border-blue-900 p-8 flex flex-col items-center text-center relative">
+            <div className="absolute top-8 right-8 text-blue-900 font-bold text-3xl">EventHub+</div>
+            <h1 className="text-6xl font-bold text-blue-900 mt-24">Certificate of Attendance</h1>
+            <p className="text-2xl mt-12">This is to certify that</p>
+            <p className="text-5xl font-semibold mt-6 italic text-gray-800">{user?.displayName || 'Attendee'}</p>
+            <div className="w-1/2 border-b-2 border-gray-400 mt-6"></div>
+            <p className="text-2xl mt-8">has successfully attended the event</p>
+            <h2 className="text-4xl font-bold mt-4 text-blue-800">{event?.name}</h2>
+            <div className="mt-auto flex justify-between w-full text-sm text-gray-600">
+              <div>
+                <p className="font-semibold border-t-2 border-gray-400 pt-2">Event Organizer</p>
+                <p>RUAS</p>
               </div>
+              <div>
+                <p>Issued on: {new Date(certificate.issueDate).toLocaleDateString()}</p>
+                <p className="text-xs mt-1 break-all">Certificate ID: {certificate.id}</p>
+              </div>
+            </div>
           </div>
+        </div>
       </div>
       
       <div className="flex items-center justify-between rounded-lg border p-4">
         <div>
-          <p className="font-semibold">Certificate for: {cert.event?.name || `Event ID: ${cert.eventId}`}</p>
-          <p className="text-sm text-muted-foreground truncate">ID: {cert.id}</p>
+          <p className="font-semibold">
+            {isLoadingEvent ? 'Loading event name...' : `Certificate for: ${event?.name || `Event ID: ${certificate.eventId}`}`}
+          </p>
+          <p className="text-sm text-muted-foreground truncate">ID: {certificate.id}</p>
         </div>
         <div className="flex items-center gap-2">
           <Button variant="outline" size="icon" disabled>
             <ExternalLink className="h-4 w-4" />
           </Button>
-          <Button variant="outline" size="icon" onClick={handleDownload} disabled={isDownloading || !cert.event}>
-            {isDownloading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+          <Button variant="outline" size="icon" onClick={handleDownload} disabled={isDownloading || isLoadingEvent || !event}>
+            {isDownloading || isLoadingEvent ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
           </Button>
           <Button variant="outline" size="icon" disabled>
             <Linkedin className="h-4 w-4" />
@@ -217,57 +219,14 @@ function CertificateEntry({ cert }: { cert: Certificate & { event?: Event } }) {
   );
 }
 
-
 function MyCertificates() {
   const { firestore, user } = useFirebase();
-  const [certificatesWithEvents, setCertificatesWithEvents] = useState<(Certificate & { event?: Event })[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-
   const certificatesQuery = useMemoFirebase(() => {
     if (!user || !firestore) return null;
     return query(collection(firestore, 'certificates'), where('userId', '==', user.uid));
   }, [firestore, user]);
 
-  const { data: certificates } = useCollection<Certificate>(certificatesQuery);
-
-  useEffect(() => {
-    if (!firestore || certificates === undefined) return;
-    
-    setIsLoading(true);
-
-    const fetchEventsForCertificates = async () => {
-      if (!certificates || certificates.length === 0) {
-        setCertificatesWithEvents([]);
-        setIsLoading(false);
-        return;
-      }
-      
-      const eventIds = [...new Set(certificates.map(c => c.eventId))];
-      const eventsMap: Record<string, Event> = {};
-
-      if(eventIds.length > 0) {
-        for (let i = 0; i < eventIds.length; i += 30) {
-            const chunk = eventIds.slice(i, i + 30);
-            if (chunk.length === 0) continue;
-            const eventsQuery = query(collection(firestore, 'events'), where(documentId(), 'in', chunk));
-            const eventsSnap = await getDocs(eventsQuery);
-            eventsSnap.forEach(doc => {
-              eventsMap[doc.id] = { ...doc.data() as Event, id: doc.id };
-            });
-        }
-      }
-
-      const certsWithData = certificates.map(cert => ({
-        ...cert,
-        event: eventsMap[cert.eventId],
-      }));
-
-      setCertificatesWithEvents(certsWithData);
-      setIsLoading(false);
-    };
-
-    fetchEventsForCertificates();
-  }, [certificates, firestore]);
+  const { data: certificates, isLoading } = useCollection<Certificate>(certificatesQuery);
 
   return (
     <Card>
@@ -277,10 +236,10 @@ function MyCertificates() {
       </CardHeader>
       <CardContent>
         {isLoading && <div className="flex items-center space-x-2"><Loader2 className="h-4 w-4 animate-spin" /><span>Loading certificates...</span></div>}
-        {!isLoading && certificatesWithEvents && certificatesWithEvents.length > 0 ? (
+        {!isLoading && certificates && certificates.length > 0 ? (
           <div className="space-y-4">
-            {certificatesWithEvents.map(cert => (
-              <CertificateEntry key={cert.id} cert={cert} />
+            {certificates.map(cert => (
+              <CertificateEntry key={cert.id} certificate={cert} />
             ))}
           </div>
         ) : (
@@ -330,3 +289,5 @@ function RecommendedEvents() {
         </Card>
     );
 }
+
+    
