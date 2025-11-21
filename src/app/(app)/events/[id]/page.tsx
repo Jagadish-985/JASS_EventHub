@@ -22,7 +22,7 @@ export default function EventDetailsPage() {
   
   const [registrations, setRegistrations] = useState<Registration[]>([]);
   const [registeredUsers, setRegisteredUsers] = useState<User[]>([]);
-  const [isLoadingRegistrations, setIsLoadingRegistrations = useState(false);
+  const [isLoadingRegistrations, setIsLoadingRegistrations] = useState(false);
 
   const eventId = id as string;
 
@@ -186,5 +186,3 @@ export default function EventDetailsPage() {
     </div>
   );
 }
-
-    
