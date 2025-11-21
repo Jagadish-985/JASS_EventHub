@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useFirebase } from '@/firebase';
 import { useCollection } from '@/firebase/firestore/use-collection';
-import { collection, query, where, getDocs, doc } from 'firebase/firestore';
+import { collection, query, where, getDocs, doc, documentId } from 'firebase/firestore';
 import { useMemoFirebase } from '@/firebase/provider';
 import type { Event, Certificate } from '@/lib/types';
 import { useEffect, useState, useRef } from 'react';
@@ -61,10 +61,15 @@ function MyRegistrations() {
       const eventIds = registrationSnap.docs.map(doc => doc.data().eventId);
 
       if (eventIds.length > 0) {
-        // Firestore 'in' queries are limited to 30 items. For a real app, pagination or a different data model might be needed.
-        const eventsQuery = query(collection(firestore, 'events'), where('__name__', 'in', eventIds));
-        const eventsSnap = await getDocs(eventsQuery);
-        const eventsData = eventsSnap.docs.map(doc => ({ ...doc.data() as Event, id: doc.id }));
+        const eventsData: Event[] = [];
+         for (let i = 0; i < eventIds.length; i += 30) {
+            const chunk = eventIds.slice(i, i + 30);
+            const eventsQuery = query(collection(firestore, 'events'), where(documentId(), 'in', chunk));
+            const eventsSnap = await getDocs(eventsQuery);
+            eventsSnap.forEach(doc => {
+                eventsData.push({ ...doc.data() as Event, id: doc.id });
+            });
+        }
         setRegisteredEvents(eventsData);
       } else {
         setRegisteredEvents([]);
@@ -125,41 +130,62 @@ function CertificateEntry({ cert }: { cert: Certificate & { event?: Event } }) {
     if (!certificateRef.current || !cert.event) return;
     setIsDownloading(true);
 
-    const canvas = await html2canvas(certificateRef.current, {
-      scale: 2, // Higher scale for better quality
-      backgroundColor: null, // Use element's background
-    });
-    const imgData = canvas.toDataURL('image/png');
-    
-    // A4 size in mm: 210 x 297
-    const pdf = new jsPDF({
-      orientation: 'landscape',
-      unit: 'mm',
-      format: 'a4',
-    });
+    try {
+        const canvas = await html2canvas(certificateRef.current, {
+            scale: 3, // Increase scale for higher resolution
+            useCORS: true,
+            backgroundColor: '#ffffff',
+        });
 
-    const pdfWidth = pdf.internal.pageSize.getWidth();
-    const pdfHeight = pdf.internal.pageSize.getHeight();
-    pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-    pdf.save(`Certificate-${cert.event.name.replace(/ /g, '_')}.pdf`);
+        const imgData = canvas.toDataURL('image/png');
+        
+        const pdf = new jsPDF({
+            orientation: 'landscape',
+            unit: 'mm',
+            format: 'a4',
+        });
 
-    setIsDownloading(false);
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        const pdfHeight = pdf.internal.pageSize.getHeight();
+        
+        pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+        pdf.save(`Certificate-${cert.event.name.replace(/\s+/g, '_')}.pdf`);
+    } catch (error) {
+        console.error("Failed to download certificate:", error);
+    } finally {
+        setIsDownloading(false);
+    }
   };
 
   return (
     <>
       {/* Hidden div for PDF generation */}
-      <div className="fixed -left-[9999px] top-0">
-          <div ref={certificateRef} className="w-[297mm] h-[210mm] p-8 bg-white text-black flex flex-col justify-center items-center font-sans"
-              style={{ fontFamily: 'serif' }}>
-              <div className="w-full h-full border-4 border-primary p-4 flex flex-col items-center text-center">
-                  <h1 className="text-5xl font-bold text-primary mt-12">Certificate of Attendance</h1>
-                  <p className="text-lg mt-8">This is to certify that</p>
-                  <p className="text-4xl font-semibold mt-4 italic">{user?.displayName}</p>
-                  <p className="text-lg mt-4">has successfully attended the event</p>
-                  <h2 className="text-3xl font-bold mt-4">{cert.event?.name}</h2>
-                  <p className="text-md mt-auto">Issued on: {new Date(cert.issueDate).toLocaleDateString()}</p>
-                  <p className="text-xs mt-2 break-all">ID: {cert.id}</p>
+      <div className="fixed -left-[9999px] top-0 opacity-0 pointer-events-none">
+          <div 
+              ref={certificateRef} 
+              className="w-[297mm] h-[210mm] p-10 bg-white text-black flex flex-col justify-between items-center font-serif"
+              style={{ fontFamily: "'Times New Roman', Times, serif" }}
+          >
+              <div className="w-full h-full border-8 border-blue-900 p-8 flex flex-col items-center text-center relative">
+                 <div className="absolute top-8 right-8 text-blue-900 font-bold text-3xl">
+                    EventHub+
+                 </div>
+                 <h1 className="text-6xl font-bold text-blue-900 mt-24">Certificate of Attendance</h1>
+                 <p className="text-2xl mt-12">This is to certify that</p>
+                 <p className="text-5xl font-semibold mt-6 italic text-gray-800">{user?.displayName || 'Attendee'}</p>
+                 <div className="w-1/2 border-b-2 border-gray-400 mt-6"></div>
+                 <p className="text-2xl mt-8">has successfully attended the event</p>
+                 <h2 className="text-4xl font-bold mt-4 text-blue-800">{cert.event?.name}</h2>
+                 <div className="mt-auto flex justify-between w-full text-sm text-gray-600">
+                    <div>
+                        <p className="font-semibold border-t-2 border-gray-400 pt-2">Event Organizer</p>
+                        <p>RUAS</p>
+                    </div>
+                    <div>
+                        <p>Issued on: {new Date(cert.issueDate).toLocaleDateString()}</p>
+                        <p className="text-xs mt-1 break-all">Certificate ID: {cert.id}</p>
+                    </div>
+                 </div>
               </div>
           </div>
       </div>
@@ -173,7 +199,7 @@ function CertificateEntry({ cert }: { cert: Certificate & { event?: Event } }) {
           <Button variant="outline" size="icon" disabled>
             <ExternalLink className="h-4 w-4" />
           </Button>
-          <Button variant="outline" size="icon" onClick={handleDownload} disabled={isDownloading}>
+          <Button variant="outline" size="icon" onClick={handleDownload} disabled={isDownloading || !cert.event}>
             {isDownloading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
           </Button>
           <Button variant="outline" size="icon" disabled>
@@ -192,23 +218,30 @@ function MyCertificates() {
   const [isLoading, setIsLoading] = useState(true);
 
   const certificatesQuery = useMemoFirebase(() => {
-    if (!user) return null;
+    if (!user || !firestore) return null;
     return query(collection(firestore, 'certificates'), where('userId', '==', user.uid));
   }, [firestore, user]);
 
   const { data: certificates } = useCollection<Certificate>(certificatesQuery);
 
   useEffect(() => {
-    if (!certificates || !firestore) {
-        if(certificates === null && user) { // If certificates are loaded but null
-            setIsLoading(false);
-            setCertificatesWithEvents([]);
-        }
+    if (!firestore) return;
+    
+    // Set loading to true whenever certificates object changes, as we need to re-fetch events
+    setIsLoading(true);
+
+    if (certificates === null) {
+        setCertificatesWithEvents([]);
+        setIsLoading(false);
         return;
-    };
+    }
+
+    if(certificates === undefined) {
+      // Still loading certificates from useCollection
+      return;
+    }
 
     const fetchEventsForCertificates = async () => {
-      setIsLoading(true);
       if (certificates.length === 0) {
         setCertificatesWithEvents([]);
         setIsLoading(false);
@@ -218,15 +251,16 @@ function MyCertificates() {
       const eventIds = [...new Set(certificates.map(c => c.eventId))];
       const events: Record<string, Event> = {};
 
-      // Batch fetch events
-      for (let i = 0; i < eventIds.length; i += 30) {
-        const chunk = eventIds.slice(i, i + 30);
-        const eventsQuery = query(collection(firestore, 'events'), where('__name__', 'in', chunk));
-        const eventsSnap = await getDocs(eventsQuery);
-        eventsSnap.forEach(doc => {
-          events[doc.id] = { ...doc.data() as Event, id: doc.id };
-        });
-      }
+      // Batch fetch events in chunks of 30 (Firestore 'in' query limit)
+       for (let i = 0; i < eventIds.length; i += 30) {
+            const chunk = eventIds.slice(i, i + 30);
+            if (chunk.length === 0) continue;
+            const eventsQuery = query(collection(firestore, 'events'), where(documentId(), 'in', chunk));
+            const eventsSnap = await getDocs(eventsQuery);
+            eventsSnap.forEach(doc => {
+              events[doc.id] = { ...doc.data() as Event, id: doc.id };
+            });
+        }
 
       const certsWithData = certificates.map(cert => ({
         ...cert,
@@ -238,7 +272,7 @@ function MyCertificates() {
     };
 
     fetchEventsForCertificates();
-  }, [certificates, firestore, user]);
+  }, [certificates, firestore]);
 
   return (
     <Card>
@@ -247,7 +281,7 @@ function MyCertificates() {
         <CardDescription>Your earned certificates from events.</CardDescription>
       </CardHeader>
       <CardContent>
-        {isLoading && <p>Loading certificates...</p>}
+        {isLoading && <div className="flex items-center space-x-2"><Loader2 className="h-4 w-4 animate-spin" /><span>Loading certificates...</span></div>}
         {!isLoading && certificatesWithEvents && certificatesWithEvents.length > 0 ? (
           <div className="space-y-4">
             {certificatesWithEvents.map(cert => (
@@ -287,7 +321,7 @@ function RecommendedEvents() {
                 <CardDescription>Events you might be interested in, powered by EventBuddy AI.</CardDescription>
             </CardHeader>
             <CardContent>
-                {loading && <p>Generating recommendations...</p>}
+                {loading && <div className="flex items-center space-x-2"><Loader2 className="h-4 w-4 animate-spin" /><span>Generating recommendations...</span></div>}
                 {recommendations && (
                     <ul className="list-disc space-y-2 pl-5">
                         {recommendations.recommendations.map((rec, index) => (
@@ -295,7 +329,10 @@ function RecommendedEvents() {
                         ))}
                     </ul>
                 )}
+                 {!loading && !recommendations && <p className="text-muted-foreground">No recommendations available at the moment.</p>}
             </CardContent>
         </Card>
     );
 }
+
+    
