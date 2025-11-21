@@ -20,7 +20,7 @@ import {
 } from "@/components/ui/select"
 
 export default function EventsPage() {
-  const { firestore } = useFirebase();
+  const { firestore, userRole } = useFirebase();
 
   // In a real app, this query would be more complex, fetching all public events.
   // For now, it fetches from a top-level 'events' collection.
@@ -30,18 +30,22 @@ export default function EventsPage() {
 
   const { data: events, isLoading } = useCollection<Event>(eventsQuery);
 
+  const canCreateEvent = userRole === 'organizer' || userRole === 'admin';
+
   return (
     <div className="animate-in fade-in-50">
       <PageHeader
         title="Discover Events"
         description="Browse and search for events that match your interests."
       >
-        <Button asChild>
-          <Link href="/organizer-dashboard?tab=create-event">
-            <PlusCircle className="mr-2 h-4 w-4" />
-            Create Event
-          </Link>
-        </Button>
+        {canCreateEvent && (
+          <Button asChild>
+            <Link href="/organizer-dashboard?tab=create-event">
+              <PlusCircle className="mr-2 h-4 w-4" />
+              Create Event
+            </Link>
+          </Button>
+        )}
       </PageHeader>
       
       <div className="mb-6 flex flex-wrap items-center gap-4">
