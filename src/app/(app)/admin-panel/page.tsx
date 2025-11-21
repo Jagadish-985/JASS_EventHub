@@ -1,3 +1,4 @@
+
 'use client';
 import { PageHeader } from '@/components/page-header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -26,7 +27,7 @@ const mockSkillData = [
 
 export default function AdminPanelPage() {
   return (
-    <div className="space-y-6 animate-in fade-in-50">
+    <div className="container mx-auto max-w-5xl space-y-6 animate-in fade-in-50">
       <PageHeader
         title="Admin Panel"
         description="Oversee university event metrics and validate certificates."
@@ -64,12 +65,12 @@ export default function AdminPanelPage() {
                   <YAxis />
                   <Tooltip />
                   <Legend />
-                  <Bar dataKey="demand" fill="#4F46E5" name="Student Demand" />
-                  <Bar dataKey="supply" fill="#06B6D4" name="Event Supply" />
+                  <Bar dataKey="demand" fill="hsl(var(--primary))" name="Student Demand" />
+                  <Bar dataKey="supply" fill="hsl(var(--accent))" name="Event Supply" />
                 </BarChart>
               </ResponsiveContainer>
             </div>
-             <p className="mt-2 text-center text-sm text-red-500 font-semibold">Insight: Gap in AI & Cybersecurity offerings.</p>
+             <p className="mt-2 text-center text-sm text-destructive font-semibold">Insight: Gap in AI & Cybersecurity offerings.</p>
           </CardContent>
         </Card>
         
@@ -129,7 +130,6 @@ function CertificateValidator() {
 
     const certRef = doc(firestore, 'certificates', certId);
     
-    // Using getDoc with proper error handling
     try {
       const certSnap = await getDoc(certRef);
        if (certSnap.exists()) {

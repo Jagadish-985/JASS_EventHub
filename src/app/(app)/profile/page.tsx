@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -65,7 +66,7 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="animate-in fade-in-50">
+    <div className="container mx-auto max-w-5xl animate-in fade-in-50">
       <PageHeader
         title="My Profile"
         description="View and manage your personal information."

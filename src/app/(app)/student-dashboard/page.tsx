@@ -1,3 +1,4 @@
+
 'use client';
 import { PageHeader } from '@/components/page-header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -19,7 +20,7 @@ export default function StudentDashboardPage() {
   const { user } = useFirebase();
 
   return (
-    <div className="animate-in fade-in-50">
+    <div className="container mx-auto max-w-5xl animate-in fade-in-50">
       <PageHeader
         title={`Welcome, ${user?.displayName || 'Student'}!`}
         description="This is your personal hub for all event-related activities."
@@ -50,7 +51,7 @@ function MyRegistrations() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    if (!user) return;
+    if (!user || !firestore) return;
 
     const fetchRegistrations = async () => {
       setIsLoading(true);
@@ -59,7 +60,8 @@ function MyRegistrations() {
       const eventIds = registrationSnap.docs.map(doc => doc.data().eventId);
 
       if (eventIds.length > 0) {
-        const eventsQuery = query(collection(firestore, 'events'), where('id', 'in', eventIds));
+        // Firestore 'in' queries are limited to 30 items. For a real app, pagination or a different data model might be needed.
+        const eventsQuery = query(collection(firestore, 'events'), where('__name__', 'in', eventIds));
         const eventsSnap = await getDocs(eventsQuery);
         const eventsData = eventsSnap.docs.map(doc => ({ ...doc.data() as Event, id: doc.id }));
         setRegisteredEvents(eventsData);
@@ -94,6 +96,7 @@ function MyRegistrations() {
                       alt={event.name}
                       fill
                       className="object-cover transition-transform group-hover:scale-105"
+                      data-ai-hint="event photo"
                     />
                   </div>
                   <div className="p-4">

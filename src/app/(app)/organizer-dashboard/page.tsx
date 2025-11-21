@@ -1,9 +1,10 @@
+
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { PageHeader } from '@/components/page-header';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useFirebase, setDocumentNonBlocking } from '@/firebase';
+import { useFirebase, setDocumentNonBlocking, addDocumentNonBlocking } from '@/firebase';
 import { useCollection } from '@/firebase/firestore/use-collection';
 import { collection, query, where, getDocs, setDoc, doc } from 'firebase/firestore';
 import { useMemoFirebase } from '@/firebase/provider';
@@ -24,7 +25,7 @@ export default function OrganizerDashboardPage() {
   const defaultTab = searchParams.get('tab') || 'my-events';
 
   return (
-    <div className="animate-in fade-in-50">
+    <div className="container mx-auto max-w-5xl animate-in fade-in-50">
       <PageHeader
         title="Organizer Dashboard"
         description={`Manage your events, ${user?.displayName || 'Organizer'}.`}
@@ -64,7 +65,7 @@ function CreateEventForm() {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!user) return;
+    if (!user || !firestore) return;
     setIsLoading(true);
 
     const formData = new FormData(e.currentTarget);
@@ -120,7 +121,7 @@ function CreateEventForm() {
 function MyEvents() {
   const { firestore, user } = useFirebase();
   const eventsQuery = useMemoFirebase(() => {
-    if (!user) return null;
+    if (!user || !firestore) return null;
     return query(collection(firestore, 'events'), where('organizerId', '==', user.uid));
   }, [firestore, user]);
   const { data: events, isLoading } = useCollection<Event>(eventsQuery);
@@ -153,7 +154,7 @@ function RegistrationsList() {
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
-        if (!user) return;
+        if (!user || !firestore) return;
         // This is simplified. A real app would likely query registrations per event.
         const fetchRegistrations = async () => {
             const regsQuery = query(collection(firestore, 'registrations'));
@@ -170,7 +171,7 @@ function RegistrationsList() {
             <CardContent>
                 {isLoading && <p>Loading...</p>}
                 {!isLoading && registrations.length > 0 ? (
-                    <ul>{registrations.map(r => <li key={r.userId+r.eventId}>{r.userId} for {r.eventId}</li>)}</ul>
+                    <ul>{registrations.map((r, i) => <li key={i}>{r.userId} for {r.eventId}</li>)}</ul>
                 ) : !isLoading && <p>No registrations yet.</p>}
             </CardContent>
         </Card>
