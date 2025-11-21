@@ -26,7 +26,7 @@ export default function StudentDashboardPage() {
         title={`Welcome, ${user?.displayName || 'Student'}!`}
         description="This is your personal hub for all event-related activities."
       />
-      <Tabs defaultValue="registrations">
+      <Tabs defaultValue="certificates">
         <TabsList className="mb-4">
           <TabsTrigger value="registrations">My Registrations</TabsTrigger>
           <TabsTrigger value="certificates">My Certificates</TabsTrigger>
@@ -56,25 +56,31 @@ function MyRegistrations() {
 
     const fetchRegistrations = async () => {
       setIsLoading(true);
-      const registrationsQuery = query(collection(firestore, 'registrations'), where('userId', '==', user.uid));
-      const registrationSnap = await getDocs(registrationsQuery);
-      const eventIds = registrationSnap.docs.map(doc => doc.data().eventId);
+      try {
+        const registrationsQuery = query(collection(firestore, 'registrations'), where('userId', '==', user.uid));
+        const registrationSnap = await getDocs(registrationsQuery);
+        const eventIds = registrationSnap.docs.map(doc => doc.data().eventId);
 
-      if (eventIds.length > 0) {
-        const eventsData: Event[] = [];
-         for (let i = 0; i < eventIds.length; i += 30) {
-            const chunk = eventIds.slice(i, i + 30);
-            const eventsQuery = query(collection(firestore, 'events'), where(documentId(), 'in', chunk));
-            const eventsSnap = await getDocs(eventsQuery);
-            eventsSnap.forEach(doc => {
-                eventsData.push({ ...doc.data() as Event, id: doc.id });
-            });
+        if (eventIds.length > 0) {
+          const eventsData: Event[] = [];
+          for (let i = 0; i < eventIds.length; i += 30) {
+              const chunk = eventIds.slice(i, i + 30);
+              const eventsQuery = query(collection(firestore, 'events'), where(documentId(), 'in', chunk));
+              const eventsSnap = await getDocs(eventsQuery);
+              eventsSnap.forEach(doc => {
+                  eventsData.push({ ...doc.data() as Event, id: doc.id });
+              });
+          }
+          setRegisteredEvents(eventsData);
+        } else {
+          setRegisteredEvents([]);
         }
-        setRegisteredEvents(eventsData);
-      } else {
+      } catch (error) {
+        console.error("Error fetching registrations: ", error);
         setRegisteredEvents([]);
+      } finally {
+        setIsLoading(false);
       }
-      setIsLoading(false);
     };
 
     fetchRegistrations();
@@ -192,7 +198,7 @@ function CertificateEntry({ cert }: { cert: Certificate & { event?: Event } }) {
       
       <div className="flex items-center justify-between rounded-lg border p-4">
         <div>
-          <p className="font-semibold">Certificate for: {cert.event?.name || cert.eventId}</p>
+          <p className="font-semibold">Certificate for: {cert.event?.name || `Event ID: ${cert.eventId}`}</p>
           <p className="text-sm text-muted-foreground truncate">ID: {cert.id}</p>
         </div>
         <div className="flex items-center gap-2">
@@ -225,46 +231,35 @@ function MyCertificates() {
   const { data: certificates } = useCollection<Certificate>(certificatesQuery);
 
   useEffect(() => {
-    if (!firestore) return;
+    if (!firestore || certificates === undefined) return;
     
-    // Set loading to true whenever certificates object changes, as we need to re-fetch events
     setIsLoading(true);
 
-    if (certificates === null) {
-        setCertificatesWithEvents([]);
-        setIsLoading(false);
-        return;
-    }
-
-    if(certificates === undefined) {
-      // Still loading certificates from useCollection
-      return;
-    }
-
     const fetchEventsForCertificates = async () => {
-      if (certificates.length === 0) {
+      if (!certificates || certificates.length === 0) {
         setCertificatesWithEvents([]);
         setIsLoading(false);
         return;
       }
       
       const eventIds = [...new Set(certificates.map(c => c.eventId))];
-      const events: Record<string, Event> = {};
+      const eventsMap: Record<string, Event> = {};
 
-      // Batch fetch events in chunks of 30 (Firestore 'in' query limit)
-       for (let i = 0; i < eventIds.length; i += 30) {
+      if(eventIds.length > 0) {
+        for (let i = 0; i < eventIds.length; i += 30) {
             const chunk = eventIds.slice(i, i + 30);
             if (chunk.length === 0) continue;
             const eventsQuery = query(collection(firestore, 'events'), where(documentId(), 'in', chunk));
             const eventsSnap = await getDocs(eventsQuery);
             eventsSnap.forEach(doc => {
-              events[doc.id] = { ...doc.data() as Event, id: doc.id };
+              eventsMap[doc.id] = { ...doc.data() as Event, id: doc.id };
             });
         }
+      }
 
       const certsWithData = certificates.map(cert => ({
         ...cert,
-        event: events[cert.eventId],
+        event: eventsMap[cert.eventId],
       }));
 
       setCertificatesWithEvents(certsWithData);
@@ -311,7 +306,7 @@ function RecommendedEvents() {
         }).then(result => {
             setRecommendations(result);
             setLoading(false);
-        });
+        }).catch(() => setLoading(false));
     }, [user]);
 
     return (
@@ -322,17 +317,16 @@ function RecommendedEvents() {
             </CardHeader>
             <CardContent>
                 {loading && <div className="flex items-center space-x-2"><Loader2 className="h-4 w-4 animate-spin" /><span>Generating recommendations...</span></div>}
-                {recommendations && (
+                {recommendations && recommendations.recommendations.length > 0 ? (
                     <ul className="list-disc space-y-2 pl-5">
                         {recommendations.recommendations.map((rec, index) => (
                             <li key={index} className="text-muted-foreground">{rec}</li>
                         ))}
                     </ul>
+                ) : (
+                 !loading && <p className="text-muted-foreground">No recommendations available at the moment.</p>
                 )}
-                 {!loading && !recommendations && <p className="text-muted-foreground">No recommendations available at the moment.</p>}
             </CardContent>
         </Card>
     );
 }
-
-    
