@@ -19,7 +19,7 @@ import { useFirebase } from '@/firebase';
 import { useEffect, useState } from 'react';
 import { doc, getDoc } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import {
   Tooltip,
   TooltipContent,
@@ -185,6 +185,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 </Button>
               </SheetTrigger>
               <SheetContent side="left" className="w-72 p-0 bg-card">
+                  <SheetHeader className="sr-only">
+                    <SheetTitle>Navigation Menu</SheetTitle>
+                  </SheetHeader>
                   <SidebarNav isMobile={true} />
               </SheetContent>
             </Sheet>
