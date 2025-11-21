@@ -1,14 +1,15 @@
+
 'use client';
 import { useParams } from 'next/navigation';
 import { useDoc } from '@/firebase/firestore/use-doc';
-import { doc, collection, query, where, getDocs } from 'firebase/firestore';
+import { doc, collection, query, where, getDocs, documentId } from 'firebase/firestore';
 import { useFirebase, addDocumentNonBlocking } from '@/firebase';
 import { useMemoFirebase } from '@/firebase/provider';
 import { Event, Registration, User } from '@/lib/types';
 import Image from 'next/image';
 import { PageHeader } from '@/components/page-header';
 import { Button } from '@/components/ui/button';
-import { Calendar, MapPin, Users, Tag, QrCode } from 'lucide-react';
+import { Calendar, MapPin, Users, Tag, QrCode, UserCheck } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { useState, useEffect } from 'react';
@@ -16,45 +17,60 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 export default function EventDetailsPage() {
   const { id } = useParams();
-  const { firestore, user } = useFirebase();
+  const { firestore, user, userRole } = useFirebase();
   const { toast } = useToast();
-  const [userRole, setUserRole] = useState<string | null>(null);
+  
   const [registrations, setRegistrations] = useState<Registration[]>([]);
-  const [isLoadingRegistrations, setIsLoadingRegistrations] = useState(false);
+  const [registeredUsers, setRegisteredUsers] = useState<User[]>([]);
+  const [isLoadingRegistrations, setIsLoadingRegistrations = useState(false);
 
-  useEffect(() => {
-    if (!user || !firestore) return;
-    const fetchUserRole = async () => {
-      const userDocRef = doc(firestore, 'users', user.uid);
-      const userDoc = await getDocs(userDocRef);
-      if (userDoc.exists()) {
-        setUserRole(userDoc.data()?.role);
-      }
-    };
-    fetchUserRole();
-  }, [user, firestore]);
+  const eventId = id as string;
 
   const eventRef = useMemoFirebase(
-    () => (firestore && id ? doc(firestore, 'events', id as string) : null),
-    [firestore, id]
+    () => (firestore && eventId ? doc(firestore, 'events', eventId) : null),
+    [firestore, eventId]
   );
 
   const { data: event, isLoading } = useDoc<Event>(eventRef);
 
+  const isOrganizerOrAdmin = useMemo(() => {
+    if (!user || !event) return false;
+    return user.uid === event.organizerId || userRole === 'admin';
+  }, [user, event, userRole]);
+
+
   useEffect(() => {
-    if (!event || !firestore || !user) return;
-    if (user.uid === event.organizerId || userRole === 'admin') {
-      const fetchRegistrations = async () => {
-        setIsLoadingRegistrations(true);
-        const q = query(collection(firestore, 'registrations'), where('eventId', '==', event.id));
+    if (!isOrganizerOrAdmin || !firestore || !eventId) return;
+
+    const fetchRegistrations = async () => {
+      setIsLoadingRegistrations(true);
+      try {
+        const q = query(collection(firestore, 'registrations'), where('eventId', '==', eventId));
         const querySnapshot = await getDocs(q);
         const regs = querySnapshot.docs.map(doc => doc.data() as Registration);
         setRegistrations(regs);
+
+        if (regs.length > 0) {
+          const userIds = regs.map(r => r.userId);
+          const usersQuery = query(collection(firestore, 'users'), where(documentId(), 'in', userIds));
+          const usersSnap = await getDocs(usersQuery);
+          const usersData = usersSnap.docs.map(doc => ({ ...doc.data(), id: doc.id } as User));
+          setRegisteredUsers(usersData);
+        } else {
+          setRegisteredUsers([]);
+        }
+
+      } catch (error) {
+        console.error("Error fetching registrations: ", error);
+        setRegisteredUsers([]);
+        setRegistrations([]);
+      } finally {
         setIsLoadingRegistrations(false);
-      };
-      fetchRegistrations();
-    }
-  }, [event, firestore, user, userRole]);
+      }
+    };
+    
+    fetchRegistrations();
+  }, [eventId, firestore, isOrganizerOrAdmin]);
 
   const handleRegister = () => {
     if (!user || !event || !firestore) return;
@@ -82,8 +98,6 @@ export default function EventDetailsPage() {
     return <div className="text-center p-10">Event not found.</div>;
   }
   
-  const isOrganizerOrAdmin = user?.uid === event.organizerId || userRole === 'admin';
-
   return (
     <div className="animate-in fade-in-50 space-y-8">
       <div className="relative h-64 md:h-96 w-full overflow-hidden rounded-xl">
@@ -148,15 +162,21 @@ export default function EventDetailsPage() {
       {isOrganizerOrAdmin && (
         <Card className="max-w-4xl mx-auto">
           <CardHeader>
-            <CardTitle>Event Registrations</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              <UserCheck />
+              Event Registrations
+            </CardTitle>
           </CardHeader>
           <CardContent>
             {isLoadingRegistrations && <p>Loading registrations...</p>}
-            {!isLoadingRegistrations && registrations.length === 0 && <p>No one has registered yet.</p>}
-            {!isLoadingRegistrations && registrations.length > 0 && (
-              <ul className="space-y-2">
-                {registrations.map((reg) => (
-                  <li key={reg.userId} className="text-sm text-muted-foreground">User ID: {reg.userId}</li>
+            {!isLoadingRegistrations && registeredUsers.length === 0 && <p>No one has registered for this event yet.</p>}
+            {!isLoadingRegistrations && registeredUsers.length > 0 && (
+              <ul className="space-y-3 divide-y">
+                {registeredUsers.map((regUser) => (
+                  <li key={regUser.id} className="pt-3 first:pt-0">
+                    <p className="font-semibold">{regUser.name}</p>
+                    <p className="text-sm text-muted-foreground">{regUser.email}</p>
+                  </li>
                 ))}
               </ul>
             )}
@@ -166,3 +186,5 @@ export default function EventDetailsPage() {
     </div>
   );
 }
+
+    

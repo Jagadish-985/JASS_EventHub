@@ -219,20 +219,25 @@ function AttendanceList() {
 
         const fetchAttendees = async () => {
             setIsLoading(true);
-            setAttendees([]);
-            const attendanceQuery = query(collection(firestore, 'attendance'), where('eventId', '==', selectedEventId));
-            const attendanceSnap = await getDocs(attendanceQuery);
-            const userIds = attendanceSnap.docs.map(doc => doc.data().userId);
+            try {
+                const attendanceQuery = query(collection(firestore, 'attendance'), where('eventId', '==', selectedEventId));
+                const attendanceSnap = await getDocs(attendanceQuery);
+                const userIds = attendanceSnap.docs.map(doc => doc.data().userId);
 
-            if (userIds.length > 0) {
-                const usersQuery = query(collection(firestore, 'users'), where(documentId(), 'in', userIds));
-                const usersSnap = await getDocs(usersQuery);
-                const usersData = usersSnap.docs.map(doc => ({ ...doc.data(), id: doc.id } as User));
-                setAttendees(usersData);
-            } else {
+                if (userIds.length > 0) {
+                    const usersQuery = query(collection(firestore, 'users'), where(documentId(), 'in', userIds));
+                    const usersSnap = await getDocs(usersQuery);
+                    const usersData = usersSnap.docs.map(doc => ({ ...doc.data(), id: doc.id } as User));
+                    setAttendees(usersData);
+                } else {
+                    setAttendees([]);
+                }
+            } catch (error) {
+                console.error("Error fetching attendees:", error);
                 setAttendees([]);
+            } finally {
+                setIsLoading(false);
             }
-            setIsLoading(false);
         };
 
         fetchAttendees();
