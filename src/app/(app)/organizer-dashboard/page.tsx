@@ -149,9 +149,9 @@ function MyEvents() {
 
   return (
     <Card>
-       <CardHeader>
+      <CardHeader>
         <CardTitle>My Events</CardTitle>
-        </CardHeader>
+      </CardHeader>
       <CardContent>
         {isLoading && <p>Loading events...</p>}
         {events && events.length > 0 ? (
@@ -217,7 +217,7 @@ function AttendanceList() {
         if (!selectedEventId || !firestore) {
             setAttendees([]);
             return;
-        };
+        }
 
         const fetchAttendees = async () => {
             setIsLoading(true);
