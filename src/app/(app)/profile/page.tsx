@@ -1,9 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useFirebase } from '@/firebase';
+import { useFirebase, updateDocumentNonBlocking } from '@/firebase';
 import { useDoc } from '@/firebase/firestore/use-doc';
-import { doc, updateDoc } from 'firebase/firestore';
+import { doc } from 'firebase/firestore';
 import { useMemoFirebase } from '@/firebase/provider';
 import type { User } from '@/lib/types';
 import { PageHeader } from '@/components/page-header';
@@ -49,22 +49,15 @@ export default function ProfilePage() {
   const handleSaveChanges = async () => {
     if (!userDocRef) return;
     setIsUpdating(true);
-    try {
-      await updateDoc(userDocRef, { interests });
-      toast({
-        title: 'Success!',
-        description: 'Your interests have been updated.',
-      });
-    } catch (error) {
-      console.error('Error updating interests:', error);
-      toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: 'Failed to update interests.',
-      });
-    } finally {
-      setIsUpdating(false);
-    }
+    
+    updateDocumentNonBlocking(userDocRef, { interests });
+    
+    toast({
+      title: 'Success!',
+      description: 'Your interests have been updated.',
+    });
+    
+    setIsUpdating(false);
   };
 
   if (isUserLoading) {

@@ -1,12 +1,13 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { PageHeader } from '@/components/page-header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Html5Qrcode, Html5QrcodeScanner, Html5QrcodeScanType } from 'html5-qrcode';
-import { useFirebase } from '@/firebase';
+import { useFirebase, addDocumentNonBlocking } from '@/firebase';
 import { collection, addDoc } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { v4 as uuidv4 } from 'uuid';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 const sha256 = async (message: string) => {
   const msgBuffer = new TextEncoder().encode(message);
@@ -20,88 +21,103 @@ export default function QRScannerPage() {
   const [scanResult, setScanResult] = useState<string | null>(null);
   const { firestore, user } = useFirebase();
   const { toast } = useToast();
+  const [hasCameraPermission, setHasCameraPermission] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const scannerRef = useRef<Html5Qrcode | null>(null);
+
 
   useEffect(() => {
-    const scanner = new Html5Qrcode('qr-reader');
-    let isScanning = true;
-
-    const onScanSuccess = async (decodedText: string, decodedResult: any) => {
-      if (isScanning) {
-        isScanning = false; // Prevent multiple executions
-        setScanResult(decodedText);
-        scanner.stop().catch(err => console.error("Error stopping scanner", err));
-
-        if (!user) {
-          toast({ variant: 'destructive', title: 'Error', description: 'You must be logged in.' });
-          return;
+    const getCameraPermission = async () => {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        setHasCameraPermission(true);
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
         }
+      } catch (error) {
+        console.error('Error accessing camera:', error);
+        setHasCameraPermission(false);
+        toast({
+          variant: 'destructive',
+          title: 'Camera Access Denied',
+          description: 'Please enable camera permissions in your browser settings to use this app.',
+        });
+      }
+    };
 
-        try {
-          // 1. Mark attendance
-          const attendanceRef = collection(firestore, 'attendance');
-          await addDoc(attendanceRef, {
-            eventId: decodedText,
-            userId: user.uid,
-            present: true,
-            timestamp: new Date().toISOString(),
-          });
+    getCameraPermission();
 
-          // 2. Generate certificate metadata
-          const certId = uuidv4();
-          const certHash = await sha256(`${decodedText}-${user.uid}-${certId}`);
-          const certificateRef = collection(firestore, 'certificates');
-          await addDoc(certificateRef, {
-            id: certId,
-            hash: certHash,
-            eventId: decodedText,
-            userId: user.uid,
-            issueDate: new Date().toISOString(),
-          });
+    const qrCodeScanner = new Html5Qrcode('qr-reader-container');
+    scannerRef.current = qrCodeScanner;
 
-          toast({
-            title: 'Check-in Successful!',
-            description: `Attendance marked for event. Certificate issued.`,
-          });
-
-        } catch (error) {
-          console.error("Error during check-in:", error);
-          toast({
-            variant: 'destructive',
-            title: 'Check-in Failed',
-            description: 'There was a problem recording your attendance.',
-          });
+    const onScanSuccess = (decodedText: string, decodedResult: any) => {
+      if (!scanResult) {
+        setScanResult(decodedText);
+        handleCheckIn(decodedText);
+         if (scannerRef.current?.isScanning) {
+          scannerRef.current.stop();
         }
       }
     };
 
     const onScanFailure = (error: any) => {
-      // console.warn(`Code scan error = ${error}`);
+      // console.warn(`QR error = ${error}`);
     };
-
-    scanner.start(
-      { facingMode: "environment" },
-      {
-        fps: 10,
-        qrbox: { width: 250, height: 250 },
-        supportedScanTypes: [Html5QrcodeScanType.SCAN_TYPE_CAMERA],
-      },
-      onScanSuccess,
-      onScanFailure
-    ).catch(err => {
-      console.error("Unable to start scanning.", err);
-      toast({
-        variant: "destructive",
-        title: "Camera Error",
-        description: "Could not start camera. Please check permissions."
+    
+    qrCodeScanner.start(
+        { facingMode: 'environment' },
+        {
+          fps: 10,
+          qrbox: { width: 250, height: 250 },
+          supportedScanTypes: [Html5QrcodeScanType.SCAN_TYPE_CAMERA],
+        },
+        onScanSuccess,
+        onScanFailure
+      )
+      .catch((err) => {
+        // console.error("Unable to start scanning.", err)
       });
-    });
-
+      
     return () => {
-      if (scanner && scanner.isScanning) {
-        scanner.stop().catch(err => console.error("Error stopping scanner on cleanup", err));
+      if (scannerRef.current?.isScanning) {
+        scannerRef.current.stop().catch(err => console.log('Failed to stop scanner'));
       }
     };
-  }, [user, firestore, toast]);
+  }, [scanResult]);
+
+
+  const handleCheckIn = async (eventId: string) => {
+    if (!user) {
+      toast({ variant: 'destructive', title: 'Error', description: 'You must be logged in.' });
+      return;
+    }
+
+    // 1. Mark attendance
+    const attendanceRef = collection(firestore, 'attendance');
+    addDocumentNonBlocking(attendanceRef, {
+      eventId: eventId,
+      userId: user.uid,
+      present: true,
+      timestamp: new Date().toISOString(),
+    });
+
+    // 2. Generate certificate metadata
+    const certId = uuidv4();
+    const certHash = await sha256(`${eventId}-${user.uid}-${certId}`);
+    const certificateRef = collection(firestore, 'certificates');
+    addDocumentNonBlocking(certificateRef, {
+      uuid: certId, // Changed from id to uuid
+      hash: certHash,
+      eventId: eventId,
+      userId: user.uid,
+      issueDate: new Date().toISOString(),
+    });
+
+    toast({
+      title: 'Check-in Successful!',
+      description: `Attendance marked for event. Certificate issued.`,
+    });
+  };
 
   return (
     <div className="animate-in fade-in-50">
@@ -114,13 +130,21 @@ export default function QRScannerPage() {
           <CardTitle>Scan QR Code</CardTitle>
         </CardHeader>
         <CardContent>
-          <div id="qr-reader" className="w-full"></div>
+          <div id="qr-reader-container" className="w-full"></div>
           {scanResult && (
             <div className="mt-4 text-center">
               <p className="font-semibold text-green-600">Scan Successful!</p>
               <p className="text-muted-foreground text-sm">Event ID: {scanResult}</p>
               <p className="text-muted-foreground">Processing your check-in...</p>
             </div>
+          )}
+           {!hasCameraPermission && (
+            <Alert variant="destructive" className="mt-4">
+              <AlertTitle>Camera Access Required</AlertTitle>
+              <AlertDescription>
+                Please allow camera access to use this feature.
+              </AlertDescription>
+            </Alert>
           )}
         </CardContent>
       </Card>

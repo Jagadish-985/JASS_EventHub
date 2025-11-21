@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { PageHeader } from '@/components/page-header';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useFirebase } from '@/firebase';
+import { useFirebase, setDocumentNonBlocking } from '@/firebase';
 import { useCollection } from '@/firebase/firestore/use-collection';
 import { collection, query, where, getDocs, setDoc, doc } from 'firebase/firestore';
 import { useMemoFirebase } from '@/firebase/provider';
@@ -69,8 +69,7 @@ function CreateEventForm() {
 
     const formData = new FormData(e.currentTarget);
     const eventId = uuidv4();
-    const eventData: Event = {
-      id: eventId,
+    const eventData: Omit<Event, 'id'> = {
       name: formData.get('name') as string,
       description: formData.get('description') as string,
       startTime: new Date(formData.get('date') as string).toISOString(),
@@ -82,24 +81,14 @@ function CreateEventForm() {
       image: `https://picsum.photos/seed/${eventId}/600/400`,
     };
 
-    try {
-        const eventRef = doc(firestore, 'events', eventId);
-        await setDoc(eventRef, eventData);
-        
-        toast({
-        title: 'Event Created!',
-        description: `${eventData.name} has been successfully created.`,
-        });
-        (e.target as HTMLFormElement).reset();
-    } catch (error) {
-        console.error("Error creating event: ", error);
-        toast({
-            variant: "destructive",
-            title: 'Event Creation Failed',
-            description: 'There was an error creating your event.',
-        });
-    }
-
+    const eventRef = doc(firestore, 'events', eventId);
+    setDocumentNonBlocking(eventRef, eventData, { merge: false });
+    
+    toast({
+      title: 'Event Created!',
+      description: `${eventData.name} has been successfully created.`,
+    });
+    (e.target as HTMLFormElement).reset();
 
     setIsLoading(false);
   };

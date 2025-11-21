@@ -7,9 +7,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { useFirebase } from '@/firebase';
+import { useFirebase, setDocumentNonBlocking } from '@/firebase';
 import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
-import { doc, setDoc } from 'firebase/firestore';
+import { doc } from 'firebase/firestore';
 import { Loader2 } from 'lucide-react';
 import {
   Select,
@@ -51,7 +51,7 @@ export default function SignupPage() {
       };
       
       const userDocRef = doc(firestore, 'users', user.uid);
-      await setDoc(userDocRef, userData);
+      setDocumentNonBlocking(userDocRef, userData, { merge: false });
 
       toast({
         title: "Account Created!",
