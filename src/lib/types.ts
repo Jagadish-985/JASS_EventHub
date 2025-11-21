@@ -5,6 +5,7 @@ export type User = {
   avatar: string;
   interests: string[];
   pastAttendance: string[];
+  role: 'student' | 'admin';
 };
 
 export type Event = {

@@ -88,13 +88,22 @@
           "items": {
             "type": "string"
           }
+        },
+        "role": {
+          "type": "string",
+          "description": "The role of the user, e.g., student or admin.",
+          "enum": [
+            "student",
+            "admin"
+          ]
         }
       },
       "required": [
         "id",
         "firstName",
         "lastName",
-        "email"
+        "email",
+        "role"
       ]
     },
     "Tag": {

@@ -49,15 +49,15 @@ function Header() {
         <Link href="#innovation" className="text-sm font-medium hover:text-blue-300 transition-colors" prefetch={false}>
           Innovation
         </Link>
-        <Link href="/login" className="flex items-center text-sm font-medium hover:text-blue-300 transition-colors" prefetch={false}>
+        <Link href="/login/student" className="flex items-center text-sm font-medium hover:text-blue-300 transition-colors" prefetch={false}>
           <Users className="h-4 w-4 mr-1" />
           Student
         </Link>
-        <Link href="/login" className="flex items-center text-sm font-medium hover:text-blue-300 transition-colors" prefetch={false}>
+        <Link href="/login/admin" className="flex items-center text-sm font-medium hover:text-blue-300 transition-colors" prefetch={false}>
           <User className="h-4 w-4 mr-1" />
           Organizer
         </Link>
-        <Link href="/login" className="flex items-center text-sm font-medium hover:text-blue-300 transition-colors" prefetch={false}>
+        <Link href="/login/admin" className="flex items-center text-sm font-medium hover:text-blue-300 transition-colors" prefetch={false}>
           <BarChart className="h-4 w-4 mr-1" />
           Admin
         </Link>
@@ -93,7 +93,7 @@ function HeroSection() {
               <Link href="/dashboard">Open Student Dashboard</Link>
             </Button>
             <Button asChild variant="outline" size="lg" className="border-white text-white hover:bg-white hover:text-[#0A192F]">
-               <Link href="/dashboard">View Admin Insights</Link>
+               <Link href="/admin/dashboard">View Admin Insights</Link>
             </Button>
           </div>
         </div>
