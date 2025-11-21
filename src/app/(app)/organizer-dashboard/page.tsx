@@ -149,7 +149,9 @@ function MyEvents() {
 
   return (
     <Card>
-      <CardHeader><CardTitle>My Events</CardTitle></CardHeader>
+       <CardHeader>
+        <CardTitle>My Events</CardTitle>
+        </CardHeader>
       <CardContent>
         {isLoading && <p>Loading events...</p>}
         {events && events.length > 0 ? (
@@ -219,6 +221,7 @@ function AttendanceList() {
 
         const fetchAttendees = async () => {
             setIsLoading(true);
+            setAttendees([]);
             try {
                 const attendanceQuery = query(collection(firestore, 'attendance'), where('eventId', '==', selectedEventId));
                 const attendanceSnap = await getDocs(attendanceQuery);
@@ -229,12 +232,9 @@ function AttendanceList() {
                     const usersSnap = await getDocs(usersQuery);
                     const usersData = usersSnap.docs.map(doc => ({ ...doc.data(), id: doc.id } as User));
                     setAttendees(usersData);
-                } else {
-                    setAttendees([]);
                 }
             } catch (error) {
                 console.error("Error fetching attendees:", error);
-                setAttendees([]);
             } finally {
                 setIsLoading(false);
             }
