@@ -5,16 +5,17 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useFirebase } from '@/firebase';
 import { useCollection } from '@/firebase/firestore/use-collection';
-import { collection, query, where, getDocs } from 'firebase/firestore';
+import { collection, query, where, getDocs, doc } from 'firebase/firestore';
 import { useMemoFirebase } from '@/firebase/provider';
 import type { Event, Certificate } from '@/lib/types';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
-import { Download, Linkedin, ExternalLink } from 'lucide-react';
+import { Download, Linkedin, ExternalLink, Loader2 } from 'lucide-react';
 import { getPersonalizedEventRecommendations, PersonalizedEventRecommendationsOutput } from '@/ai/flows/personalized-event-recommendations';
-
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
 
 export default function StudentDashboardPage() {
   const { user } = useFirebase();
@@ -115,15 +116,129 @@ function MyRegistrations() {
   );
 }
 
+function CertificateEntry({ cert }: { cert: Certificate & { event?: Event } }) {
+  const { user } = useFirebase();
+  const [isDownloading, setIsDownloading] = useState(false);
+  const certificateRef = useRef<HTMLDivElement>(null);
+
+  const handleDownload = async () => {
+    if (!certificateRef.current || !cert.event) return;
+    setIsDownloading(true);
+
+    const canvas = await html2canvas(certificateRef.current, {
+      scale: 2, // Higher scale for better quality
+      backgroundColor: null, // Use element's background
+    });
+    const imgData = canvas.toDataURL('image/png');
+    
+    // A4 size in mm: 210 x 297
+    const pdf = new jsPDF({
+      orientation: 'landscape',
+      unit: 'mm',
+      format: 'a4',
+    });
+
+    const pdfWidth = pdf.internal.pageSize.getWidth();
+    const pdfHeight = pdf.internal.pageSize.getHeight();
+    pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+    pdf.save(`Certificate-${cert.event.name.replace(/ /g, '_')}.pdf`);
+
+    setIsDownloading(false);
+  };
+
+  return (
+    <>
+      {/* Hidden div for PDF generation */}
+      <div className="fixed -left-[9999px] top-0">
+          <div ref={certificateRef} className="w-[297mm] h-[210mm] p-8 bg-white text-black flex flex-col justify-center items-center font-sans"
+              style={{ fontFamily: 'serif' }}>
+              <div className="w-full h-full border-4 border-primary p-4 flex flex-col items-center text-center">
+                  <h1 className="text-5xl font-bold text-primary mt-12">Certificate of Attendance</h1>
+                  <p className="text-lg mt-8">This is to certify that</p>
+                  <p className="text-4xl font-semibold mt-4 italic">{user?.displayName}</p>
+                  <p className="text-lg mt-4">has successfully attended the event</p>
+                  <h2 className="text-3xl font-bold mt-4">{cert.event?.name}</h2>
+                  <p className="text-md mt-auto">Issued on: {new Date(cert.issueDate).toLocaleDateString()}</p>
+                  <p className="text-xs mt-2 break-all">ID: {cert.id}</p>
+              </div>
+          </div>
+      </div>
+      
+      <div className="flex items-center justify-between rounded-lg border p-4">
+        <div>
+          <p className="font-semibold">Certificate for: {cert.event?.name || cert.eventId}</p>
+          <p className="text-sm text-muted-foreground truncate">ID: {cert.id}</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="icon" disabled>
+            <ExternalLink className="h-4 w-4" />
+          </Button>
+          <Button variant="outline" size="icon" onClick={handleDownload} disabled={isDownloading}>
+            {isDownloading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+          </Button>
+          <Button variant="outline" size="icon" disabled>
+            <Linkedin className="h-4 w-4" />
+          </Button>
+        </div>
+      </div>
+    </>
+  );
+}
+
+
 function MyCertificates() {
   const { firestore, user } = useFirebase();
+  const [certificatesWithEvents, setCertificatesWithEvents] = useState<(Certificate & { event?: Event })[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   const certificatesQuery = useMemoFirebase(() => {
     if (!user) return null;
     return query(collection(firestore, 'certificates'), where('userId', '==', user.uid));
   }, [firestore, user]);
 
-  const { data: certificates, isLoading } = useCollection<Certificate>(certificatesQuery);
+  const { data: certificates } = useCollection<Certificate>(certificatesQuery);
+
+  useEffect(() => {
+    if (!certificates || !firestore) {
+        if(certificates === null && user) { // If certificates are loaded but null
+            setIsLoading(false);
+            setCertificatesWithEvents([]);
+        }
+        return;
+    };
+
+    const fetchEventsForCertificates = async () => {
+      setIsLoading(true);
+      if (certificates.length === 0) {
+        setCertificatesWithEvents([]);
+        setIsLoading(false);
+        return;
+      }
+      
+      const eventIds = [...new Set(certificates.map(c => c.eventId))];
+      const events: Record<string, Event> = {};
+
+      // Batch fetch events
+      for (let i = 0; i < eventIds.length; i += 30) {
+        const chunk = eventIds.slice(i, i + 30);
+        const eventsQuery = query(collection(firestore, 'events'), where('__name__', 'in', chunk));
+        const eventsSnap = await getDocs(eventsQuery);
+        eventsSnap.forEach(doc => {
+          events[doc.id] = { ...doc.data() as Event, id: doc.id };
+        });
+      }
+
+      const certsWithData = certificates.map(cert => ({
+        ...cert,
+        event: events[cert.eventId],
+      }));
+
+      setCertificatesWithEvents(certsWithData);
+      setIsLoading(false);
+    };
+
+    fetchEventsForCertificates();
+  }, [certificates, firestore, user]);
 
   return (
     <Card>
@@ -133,27 +248,10 @@ function MyCertificates() {
       </CardHeader>
       <CardContent>
         {isLoading && <p>Loading certificates...</p>}
-        {!isLoading && certificates && certificates.length > 0 ? (
+        {!isLoading && certificatesWithEvents && certificatesWithEvents.length > 0 ? (
           <div className="space-y-4">
-            {certificates.map(cert => (
-              <div key={cert.id} className="flex items-center justify-between rounded-lg border p-4">
-                <div>
-                  <p className="font-semibold">Certificate for Event: {cert.eventId}</p>
-                  <p className="text-sm text-muted-foreground truncate">ID: {cert.id}</p>
-                  <p className="text-sm text-muted-foreground truncate">Hash: {cert.hash}</p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Button variant="outline" size="icon">
-                    <ExternalLink className="h-4 w-4" />
-                  </Button>
-                  <Button variant="outline" size="icon">
-                    <Download className="h-4 w-4" />
-                  </Button>
-                  <Button variant="outline" size="icon">
-                    <Linkedin className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
+            {certificatesWithEvents.map(cert => (
+              <CertificateEntry key={cert.id} cert={cert} />
             ))}
           </div>
         ) : (

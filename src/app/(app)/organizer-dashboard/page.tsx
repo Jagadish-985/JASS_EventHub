@@ -174,29 +174,104 @@ function MyEvents() {
 
 function RegistrationsList() {
     const { firestore, user } = useFirebase();
-    const [registrations, setRegistrations] = useState<Registration[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
+    const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
+    const [registeredUsers, setRegisteredUsers] = useState<User[]>([]);
+    const [isLoading, setIsLoading] = useState(false);
+
+    const eventsQuery = useMemoFirebase(() => {
+        if (!user || !firestore) return null;
+        return query(collection(firestore, 'events'), where('organizerId', '==', user.uid));
+    }, [firestore, user]);
+    const { data: events, isLoading: isLoadingEvents } = useCollection<Event>(eventsQuery);
 
     useEffect(() => {
-        if (!user || !firestore) return;
-        // This is simplified. A real app would likely query registrations per event.
+        if (!selectedEventId || !firestore) {
+            setRegisteredUsers([]);
+            return;
+        }
+
         const fetchRegistrations = async () => {
-            const regsQuery = query(collection(firestore, 'registrations'));
-            const querySnapshot = await getDocs(regsQuery);
-            setRegistrations(querySnapshot.docs.map(doc => doc.data() as Registration));
-            setIsLoading(false);
+            setIsLoading(true);
+            try {
+                const regsQuery = query(collection(firestore, 'registrations'), where('eventId', '==', selectedEventId));
+                const regsSnap = await getDocs(regsQuery);
+                const userIds = regsSnap.docs.map(doc => doc.data().userId);
+
+                if (userIds.length > 0) {
+                    const usersData: User[] = [];
+                    for (let i = 0; i < userIds.length; i += 30) {
+                        const chunk = userIds.slice(i, i + 30);
+                        const usersQuery = query(collection(firestore, 'users'), where(documentId(), 'in', chunk));
+                        const usersSnap = await getDocs(usersQuery);
+                        usersSnap.forEach(doc => {
+                           usersData.push({ ...doc.data(), id: doc.id } as User)
+                        });
+                    }
+                    setRegisteredUsers(usersData);
+                } else {
+                    setRegisteredUsers([]);
+                }
+            } catch (error) {
+                console.error("Error fetching registered users:", error);
+                setRegisteredUsers([]);
+            } finally {
+                setIsLoading(false);
+            }
         };
+
         fetchRegistrations();
-    }, [user, firestore]);
+
+    }, [selectedEventId, firestore]);
 
     return (
         <Card>
-            <CardHeader><CardTitle>Registrations</CardTitle></CardHeader>
-            <CardContent>
-                {isLoading && <p>Loading...</p>}
-                {!isLoading && registrations.length > 0 ? (
-                    <ul>{registrations.map((r, i) => <li key={i}>{r.userId} for {r.eventId}</li>)}</ul>
-                ) : !isLoading && <p>No registrations yet.</p>}
+            <CardHeader>
+                <CardTitle>Event Registrations</CardTitle>
+                <CardDescription>View who has registered for your event.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+                <Select onValueChange={setSelectedEventId} disabled={isLoadingEvents}>
+                    <SelectTrigger>
+                        <SelectValue placeholder={isLoadingEvents ? "Loading events..." : "Select an event"} />
+                    </SelectTrigger>
+                    <SelectContent>
+                        {events && events.length > 0 ? (
+                            events.map(event => (
+                                <SelectItem key={event.id} value={event.id}>{event.name}</SelectItem>
+                            ))
+                        ) : (
+                            <SelectItem value="no-events" disabled>You have no events</SelectItem>
+                        )}
+                    </SelectContent>
+                </Select>
+
+                {isLoading && <div className="flex items-center justify-center p-4"><Loader2 className="mr-2 h-4 w-4 animate-spin" />Loading registrations...</div>}
+                
+                {!isLoading && selectedEventId && registeredUsers.length === 0 && (
+                    <p className="text-center text-muted-foreground pt-4">No one has registered for this event yet.</p>
+                )}
+                 {!isLoading && !selectedEventId && (
+                    <p className="text-center text-muted-foreground pt-4">Please select an event to view registrations.</p>
+                )}
+
+                {!isLoading && registeredUsers.length > 0 && (
+                     <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead>Name</TableHead>
+                                <TableHead>Email</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {registeredUsers.map((regUser) => (
+                                <TableRow key={regUser.id}>
+                                    <TableCell>{regUser.name}</TableCell>
+                                    <TableCell>{regUser.email}</TableCell>
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
+                )}
             </CardContent>
         </Card>
     );
