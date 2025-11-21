@@ -44,7 +44,6 @@ export default function SignupPage() {
       await updateProfile(user, { displayName: name });
 
       const userData = {
-        id: user.uid,
         name: name,
         email: email,
         role: role,
