@@ -1,8 +1,8 @@
 'use client';
 import { useParams } from 'next/navigation';
 import { useDoc } from '@/firebase/firestore/use-doc';
-import { doc } from 'firebase/firestore';
-import { useFirebase } from '@/firebase';
+import { doc, collection } from 'firebase/firestore';
+import { useFirebase, addDocumentNonBlocking } from '@/firebase';
 import { useMemoFirebase } from '@/firebase/provider';
 import { Event } from '@/lib/types';
 import Image from 'next/image';
@@ -11,8 +11,6 @@ import { Button } from '@/components/ui/button';
 import { Calendar, MapPin, Users, Tag, QrCode } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { addDocumentNonBlocking } from '@/firebase/non-blocking-updates';
-import { collection } from 'firebase/firestore';
 
 export default function EventDetailsPage() {
   const { id } = useParams();
@@ -20,14 +18,14 @@ export default function EventDetailsPage() {
   const { toast } = useToast();
 
   const eventRef = useMemoFirebase(
-    () => (id ? doc(firestore, 'events', id as string) : null),
+    () => (firestore && id ? doc(firestore, 'events', id as string) : null),
     [firestore, id]
   );
 
   const { data: event, isLoading } = useDoc<Event>(eventRef);
 
   const handleRegister = () => {
-    if (!user || !event) return;
+    if (!user || !event || !firestore) return;
 
     const registrationData = {
       userId: user.uid,

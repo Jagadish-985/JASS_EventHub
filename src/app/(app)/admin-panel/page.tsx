@@ -4,10 +4,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useState } from 'react';
-import { useFirebase } from '@/firebase';
+import { useFirebase, errorEmitter } from '@/firebase';
 import { doc, getDoc } from 'firebase/firestore';
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis, ResponsiveContainer, Tooltip, Legend } from 'recharts';
 import Image from 'next/image';
+import { FirestorePermissionError } from '@/firebase/errors';
 
 const mockRoiData = [
   { name: 'Registrations', value: 1250 },
@@ -121,25 +122,33 @@ function CertificateValidator() {
   const { firestore } = useFirebase();
 
   const handleValidate = async () => {
-    if (!certId) return;
+    if (!certId || !firestore) return;
     setIsLoading(true);
     setResult(null);
     setError('');
 
-    try {
-      const certRef = doc(firestore, 'certificates', certId);
-      const certSnap = await getDoc(certRef);
-      if (certSnap.exists()) {
-        const data = certSnap.data();
-        setResult({ id: certSnap.id, hash: data.hash });
-      } else {
-        setError('Certificate not found.');
-      }
-    } catch (e) {
-      setError('An error occurred while validating.');
-    } finally {
-      setIsLoading(false);
-    }
+    const certRef = doc(firestore, 'certificates', certId);
+    
+    getDoc(certRef)
+      .then((certSnap) => {
+        if (certSnap.exists()) {
+          const data = certSnap.data();
+          setResult({ id: certSnap.id, hash: data.hash });
+        } else {
+          setError('Certificate not found.');
+        }
+      })
+      .catch((e) => {
+        const permissionError = new FirestorePermissionError({
+          path: certRef.path,
+          operation: 'get',
+        });
+        errorEmitter.emit('permission-error', permissionError);
+        setError('An error occurred while validating.');
+      })
+      .finally(() => {
+        setIsLoading(false);
+      });
   };
 
   return (

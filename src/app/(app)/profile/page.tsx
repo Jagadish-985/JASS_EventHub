@@ -19,7 +19,7 @@ export default function ProfilePage() {
   const { toast } = useToast();
   
   const userDocRef = useMemoFirebase(
-    () => (user ? doc(firestore, 'users', user.uid) : null),
+    () => (user && firestore ? doc(firestore, 'users', user.uid) : null),
     [firestore, user]
   );
 

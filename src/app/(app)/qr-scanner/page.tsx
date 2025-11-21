@@ -4,7 +4,7 @@ import { PageHeader } from '@/components/page-header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Html5Qrcode, Html5QrcodeScanner, Html5QrcodeScanType } from 'html5-qrcode';
 import { useFirebase, addDocumentNonBlocking } from '@/firebase';
-import { collection, addDoc } from 'firebase/firestore';
+import { collection } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { v4 as uuidv4 } from 'uuid';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -22,18 +22,16 @@ export default function QRScannerPage() {
   const { firestore, user } = useFirebase();
   const { toast } = useToast();
   const [hasCameraPermission, setHasCameraPermission] = useState(false);
-  const videoRef = useRef<HTMLVideoElement>(null);
   const scannerRef = useRef<Html5Qrcode | null>(null);
 
 
   useEffect(() => {
-    const getCameraPermission = async () => {
+    const requestCamera = async () => {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        stream.getTracks().forEach(track => track.stop()); // Stop stream immediately after permission check
         setHasCameraPermission(true);
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-        }
+        startScanner();
       } catch (error) {
         console.error('Error accessing camera:', error);
         setHasCameraPermission(false);
@@ -44,50 +42,61 @@ export default function QRScannerPage() {
         });
       }
     };
+    
+    requestCamera();
+    
+    const startScanner = () => {
+      if (scannerRef.current?.isScanning) {
+        return;
+      }
 
-    getCameraPermission();
+      const qrCodeScanner = new Html5Qrcode('qr-reader-container');
+      scannerRef.current = qrCodeScanner;
 
-    const qrCodeScanner = new Html5Qrcode('qr-reader-container');
-    scannerRef.current = qrCodeScanner;
-
-    const onScanSuccess = (decodedText: string, decodedResult: any) => {
-      if (!scanResult) {
+      const onScanSuccess = (decodedText: string, decodedResult: any) => {
         setScanResult(decodedText);
         handleCheckIn(decodedText);
-         if (scannerRef.current?.isScanning) {
+        if (scannerRef.current?.isScanning) {
           scannerRef.current.stop();
         }
-      }
-    };
+      };
 
-    const onScanFailure = (error: any) => {
-      // console.warn(`QR error = ${error}`);
-    };
-    
-    qrCodeScanner.start(
-        { facingMode: 'environment' },
-        {
-          fps: 10,
-          qrbox: { width: 250, height: 250 },
-          supportedScanTypes: [Html5QrcodeScanType.SCAN_TYPE_CAMERA],
-        },
-        onScanSuccess,
-        onScanFailure
-      )
-      .catch((err) => {
-        // console.error("Unable to start scanning.", err)
-      });
-      
+      const onScanFailure = (error: any) => {
+        // console.warn(`QR error = ${error}`);
+      };
+
+      qrCodeScanner.start(
+          { facingMode: 'environment' },
+          {
+            fps: 10,
+            qrbox: { width: 250, height: 250 },
+            supportedScanTypes: [Html5QrcodeScanType.SCAN_TYPE_CAMERA],
+          },
+          onScanSuccess,
+          onScanFailure
+        )
+        .catch((err) => {
+          // console.error("Unable to start scanning.", err);
+        });
+    }
+
     return () => {
       if (scannerRef.current?.isScanning) {
         scannerRef.current.stop().catch(err => console.log('Failed to stop scanner'));
       }
     };
+  }, []);
+
+  useEffect(() => {
+    if (scanResult) {
+      if (scannerRef.current?.isScanning) {
+        scannerRef.current.stop();
+      }
+    }
   }, [scanResult]);
 
-
   const handleCheckIn = async (eventId: string) => {
-    if (!user) {
+    if (!user || !firestore) {
       toast({ variant: 'destructive', title: 'Error', description: 'You must be logged in.' });
       return;
     }
@@ -106,7 +115,7 @@ export default function QRScannerPage() {
     const certHash = await sha256(`${eventId}-${user.uid}-${certId}`);
     const certificateRef = collection(firestore, 'certificates');
     addDocumentNonBlocking(certificateRef, {
-      uuid: certId, // Changed from id to uuid
+      uuid: certId,
       hash: certHash,
       eventId: eventId,
       userId: user.uid,
@@ -138,7 +147,7 @@ export default function QRScannerPage() {
               <p className="text-muted-foreground">Processing your check-in...</p>
             </div>
           )}
-           {!hasCameraPermission && (
+           {!hasCameraPermission && !scanResult && (
             <Alert variant="destructive" className="mt-4">
               <AlertTitle>Camera Access Required</AlertTitle>
               <AlertDescription>
