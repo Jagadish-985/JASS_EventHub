@@ -2,30 +2,46 @@ export type User = {
   id: string;
   name: string;
   email: string;
-  avatar: string;
+  role: 'student' | 'organizer' | 'admin';
   interests: string[];
-  pastAttendance: string[];
-  role: 'student' | 'admin';
 };
 
 export type Event = {
   id: string;
   name: string;
   description: string;
+  startTime: string;
+  endTime: string;
   location: string;
-  startTime: string; // Changed from date
-  endTime: string; // Added
-  organizerId: string; // Added
-  tagIds?: string[]; // Added
-  image?: string; // Made optional
-  category?: string; // Made optional
-  tags?: string[]; // Made optional
+  category?: string;
+  tags?: string[];
+  organizerId: string;
+  image?: string;
 };
 
-export type Certificate = {
-  id: string;
-  title: string;
-  event: string;
-  date: string;
-  image: string;
+export type Registration = {
+  userId: string;
+  eventId: string;
+  createdAt: string;
 };
+
+export type Attendance = {
+    eventId: string;
+    userId: string;
+    present: boolean;
+    timestamp: string;
+}
+
+export type Certificate = {
+  id: string; // UUID
+  hash: string; // SHA-256
+  eventId: string;
+  userId: string;
+  issueDate: string;
+};
+
+export type Report = {
+    eventId: string;
+    images: string[]; // URLs to images in storage
+    generatedAt: string;
+}

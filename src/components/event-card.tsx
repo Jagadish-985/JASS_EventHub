@@ -4,50 +4,49 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/componen
 import { Badge } from '@/components/ui/badge';
 import type { Event } from '@/lib/types';
 import { Button } from './ui/button';
+import Link from 'next/link';
 
 export function EventCard({ event }: { event: Event }) {
   const placeholderImage =
     event.image ||
-    'https://picsum.photos/seed/101/600/400';
+    `https://picsum.photos/seed/${event.id}/600/400`;
 
   return (
-    <Card className="flex flex-col h-full overflow-hidden transition-all hover:shadow-lg hover:-translate-y-1">
+    <Card className="flex h-full flex-col overflow-hidden rounded-xl shadow-md transition-all hover:shadow-xl hover:-translate-y-1">
       <CardHeader className="p-0">
-        <div className="relative h-48 w-full">
-          <Image
-            src={placeholderImage}
-            alt={event.name}
-            fill
-            className="object-cover"
-            data-ai-hint="event photo"
-          />
-        </div>
-        <div className="p-6 pb-2">
-          {event.category && <Badge variant="secondary" className="mb-2">{event.category}</Badge>}
-          <CardTitle className="text-xl font-headline tracking-tight">{event.name}</CardTitle>
+        <Link href={`/events/${event.id}`} className="block">
+            <div className="relative h-48 w-full">
+              <Image
+                src={placeholderImage}
+                alt={event.name}
+                layout="fill"
+                objectFit="cover"
+                className="object-cover"
+                data-ai-hint="event photo"
+              />
+            </div>
+        </Link>
+        <div className="p-4 pb-2">
+           {event.category && <Badge variant="outline" className="mb-2">{event.category}</Badge>}
+          <CardTitle className="text-lg font-semibold tracking-tight">{event.name}</CardTitle>
         </div>
       </CardHeader>
-      <CardContent className="flex-grow p-6 pt-0">
+      <CardContent className="flex-grow p-4 pt-0">
         <div className="space-y-2 text-sm text-muted-foreground">
           <div className="flex items-center gap-2">
             <Calendar className="h-4 w-4" />
-            <span>{new Date(event.startTime).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })}</span>
+            <span>{new Date(event.startTime).toLocaleDateString()}</span>
           </div>
           <div className="flex items-center gap-2">
             <MapPin className="h-4 w-4" />
             <span>{event.location}</span>
           </div>
         </div>
-        {event.tags && event.tags.length > 0 && (
-          <div className="mt-4 flex flex-wrap gap-2">
-            {event.tags.map((tag) => (
-              <Badge key={tag} variant="outline">{tag}</Badge>
-            ))}
-          </div>
-        )}
       </CardContent>
-      <CardFooter className="p-6 pt-0">
-        <Button className="w-full">View Details</Button>
+      <CardFooter className="p-4 pt-0">
+        <Button asChild className="w-full">
+          <Link href={`/events/${event.id}`}>View Details</Link>
+        </Button>
       </CardFooter>
     </Card>
   );

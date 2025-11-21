@@ -1,204 +1,73 @@
 rules_version = '2';
 
-/**
- * @name Firebase Security Rules - EventHub+ (Prototyping)
- * @author AI Architect
- *
- * @description
- * This ruleset is generated for the prototyping phase of the EventHub+ application.
- * It prioritizes strict authorization while allowing flexibility in data schemas to
- * support rapid development and iteration.
- *
- * @philosophy
- * Core Philosophy: The security model is primarily based on user ownership. Data is
- * either strictly private to a user (and stored within their data tree) or is
- * globally public for reading.
- *
- * Data Structure: User-specific data, such as profiles and the events they organize,
- * is nested under the `/users/{userId}` path. This enables simple, performant, and
- * secure path-based authorization. Global, non-sensitive data like tags and class
- * sections are stored in top-level collections.
- *
- * Key Security Decisions:
- * - User data is private: A user can only access documents under their own
- *   `/users/{userId}` path. Listing of all users in the `/users` collection is
- *   explicitly disabled to protect user privacy.
- * - Public data is read-only: Collections like `/tags` and `/sections` are
- *   publicly readable by anyone but are locked for writing, pending the implementation
- *   of an admin role system.
- * - Secure default for mixed-content collections: Top-level collections that
- *   contain sensitive user data from multiple users (e.g., `/attendances`, `/certificates`)
- *   have list operations disabled to prevent data leakage. Access is granted on a
- *   per-document basis only to the user who owns that specific document.
- *
- * Denormalization for Authorization: Rules rely on denormalized ownership fields
- * (e.g., `organizerId` on events, `userId` on certificates) to make authorization
- * decisions without performing costly and slow cross-document `get()` calls.
- * This is crucial for performance and security at scale. For example, an event
- * document under `/users/{userId}/events/{eventId}` contains an `organizerId` field
- * that is validated against the `{userId}` in the path.
- *
- */
 service cloud.firestore {
   match /databases/{database}/documents {
-
-    // ------------------------------------------------------------------------
+    
     // Helper Functions
-    // ------------------------------------------------------------------------
-
-    /**
-     * @description Checks if the user is authenticated.
-     */
     function isSignedIn() {
       return request.auth != null;
     }
 
-    /**
-     * @description Checks if the authenticated user's UID matches the provided userId.
-     *              This is the primary function for enforcing path-based ownership.
-     * @param userId The UID of the resource owner.
-     */
     function isOwner(userId) {
       return isSignedIn() && request.auth.uid == userId;
     }
-
-    /**
-     * @description A stricter version of isOwner used for update/delete operations.
-     *              Ensures the document exists before allowing a state-changing operation.
-     * @param userId The UID of the resource owner.
-     */
-    function isExistingOwner(userId) {
-      return isOwner(userId) && resource != null;
+    
+    function isRole(role) {
+        return isSignedIn() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == role;
     }
 
-    // ------------------------------------------------------------------------
-    // User Data Collections
-    // ------------------------------------------------------------------------
-
-    /**
-     * @description Manages user profiles. A user can create their own profile,
-     *              and then read, update, or delete it. No other user can access it.
-     * @path /users/{userId}
-     * @allow A signed-in user creates their own profile: `(create) /users/abc` (auth.uid = 'abc').
-     * @deny An authenticated user tries to read another user's profile: `(get) /users/def` (auth.uid = 'abc').
-     * @principle Restricts access to a user's own data tree and prevents user enumeration.
-     */
+    // USER-OWNED DATA
     match /users/{userId} {
-      allow get: if isOwner(userId);
-      allow list: if false;
-      allow create: if isOwner(userId) && request.resource.data.id == userId;
-      allow update: if isExistingOwner(userId) && request.resource.data.id == resource.data.id;
-      allow delete: if isExistingOwner(userId);
+      // Anyone can create their own user document upon signup.
+      allow create: if isSignedIn() && request.auth.uid == userId;
+      // Users can read and update their own data.
+      allow read, update: if isOwner(userId);
+      // No one can list all users or delete accounts through rules.
+      allow list, delete: if false;
     }
 
-    /**
-     * @description Manages events owned by a user. Only the owner can manage their events.
-     * @path /users/{userId}/events/{eventId}
-     * @allow User 'abc' creates an event under their own path: `(create) /users/abc/events/xyz`.
-     * @deny User 'def' tries to read an event owned by user 'abc': `(get) /users/abc/events/xyz`.
-     * @principle Enforces document ownership within a user's data tree.
-     */
-    match /users/{userId}/events/{eventId} {
-      allow get: if isOwner(userId);
-      allow list: if isOwner(userId);
-      allow create: if isOwner(userId) && request.resource.data.organizerId == userId;
-      allow update: if isExistingOwner(userId) && request.resource.data.organizerId == resource.data.organizerId;
-      allow delete: if isExistingOwner(userId);
+    // EVENTS
+    match /events/{eventId} {
+      // Any signed-in user can read/list events.
+      allow get, list: if isSignedIn();
+      // Only organizers or admins can create, update, or delete events.
+      allow create, update, delete: if isRole('organizer') || isRole('admin');
     }
 
-    /**
-     * @description Manages a user's enrollment in different sections.
-     *              Only the user can view or modify their own enrollments.
-     * @path /users/{userId}/enrolledSections/{sectionId}
-     * @allow User 'abc' adds an enrollment record for themselves: `(create) /users/abc/enrolledSections/cs101`.
-     * @deny User 'def' tries to delete an enrollment for user 'abc': `(delete) /users/abc/enrolledSections/cs101`.
-     * @principle Restricts access to a user's own data tree.
-     */
-    match /users/{userId}/enrolledSections/{sectionId} {
-      allow get: if isOwner(userId);
-      allow list: if isOwner(userId);
-      allow create: if isOwner(userId);
-      allow update: if isExistingOwner(userId);
-      allow delete: if isExistingOwner(userId);
-    }
-
-    // ------------------------------------------------------------------------
-    // Global Read-Only Collections
-    // ------------------------------------------------------------------------
-
-    /**
-     * @description Stores global tags for events. This data is public for all users to read.
-     *              Writes are disabled pending the implementation of an admin role.
-     * @path /tags/{tagId}
-     * @allow Any user, signed-in or not, can read a tag: `(get) /tags/tech`.
-     * @deny Any user tries to create a new tag: `(create) /tags/newtag`.
-     * @principle Public Read with Admin-Only Writes.
-     */
-    match /tags/{tagId} {
-      allow get: if true;
-      allow list: if true;
-      allow create: if false; // TODO: Implement admin-only access.
-      allow update: if false; // TODO: Implement admin-only access.
-      allow delete: if false; // TODO: Implement admin-only access.
-    }
-
-    /**
-     * @description Stores global class section information. This data is public for all users to read.
-     *              Writes are disabled pending the implementation of an admin role.
-     * @path /sections/{sectionId}
-     * @allow Any client can list all available sections: `(list) /sections`.
-     * @deny Any user tries to update a section: `(update) /sections/cs101`.
-     * @principle Public Read with Admin-Only Writes.
-     */
-    match /sections/{sectionId} {
-      allow get: if true;
-      allow list: if true;
-      allow create: if false; // TODO: Implement admin-only access.
-      allow update: if false; // TODO: Implement admin-only access.
-      allow delete: if false; // TODO: Implement admin-only access.
-    }
-
-    // ------------------------------------------------------------------------
-    // Mixed-Content Collections (Strict Per-Document Access)
-    // ------------------------------------------------------------------------
-
-    /**
-     * @description Manages event attendance records. Each record contains a `userId` linking it
-     *              to a specific user. Only that user can manage their own attendance record.
-     * @path /attendances/{attendanceId}
-     * @allow User 'abc' creates an attendance record for themselves: `(create) /attendances/rec123` with `{ userId: 'abc' }`.
-     * @deny User 'def' tries to read an attendance record for user 'abc': `(get) /attendances/rec123` (where data.userId is 'abc').
-     * @principle Enforces document ownership for all operations. Listing is disabled to prevent data leakage.
-     * @reasoning The initial IR suggested event organizers could manage attendance. This is not possible
-     *            with the current `/users/{userId}/events/{eventId}` structure, as a rule cannot
-     *            discover the event owner's `userId` from an `eventId` alone. The secure default is to
-     *            allow users to manage their own records.
-     */
-    match /attendances/{attendanceId} {
-      allow get: if isSignedIn() && request.auth.uid == resource.data.userId;
-      allow list: if false;
+    // REGISTRATIONS
+    match /registrations/{registrationId} {
+      // Any signed-in user can create their own registration.
       allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
-      allow update: if isSignedIn() && request.auth.uid == resource.data.userId && resource != null && request.resource.data.userId == resource.data.userId;
-      allow delete: if isSignedIn() && request.auth.uid == resource.data.userId && resource != null;
+      // Users can read their own registrations. Organizers/Admins can read all for their events.
+      allow read: if (isSignedIn() && request.resource.data.userId == request.auth.uid) || isRole('organizer') || isRole('admin');
+      // No one can list all registrations globally for security.
+      allow list: if false;
+      allow update, delete: if isRole('organizer') || isRole('admin');
+    }
+    
+    // ATTENDANCE
+    match /attendance/{attendanceId} {
+        // Organizers/Admins can create attendance records (e.g., via QR scan flow).
+        allow create: if isRole('organizer') || isRole('admin');
+        // Users can read their own attendance, Organizers/Admins can read all for an event.
+        allow read: if (isSignedIn() && resource.data.userId == request.auth.uid) || isRole('organizer') || isRole('admin');
+        allow list, update, delete: if isRole('organizer') || isRole('admin');
     }
 
-    /**
-     * @description Manages certificates earned by users. Each certificate has a `userId` field.
-     *              Only the user referenced in the `userId` field can access their own certificate.
-     * @path /certificates/{certificateId}
-     * @allow User 'abc' reads their own certificate: `(get) /certificates/cert123` (where data.userId is 'abc').
-     * @deny User 'def' tries to create a certificate for user 'abc': `(create) /certificates/cert456` with `{ userId: 'abc' }`.
-     * @principle Enforces document ownership for all operations. Listing is disabled to protect privacy.
-     * @reasoning Similar to attendances, the IR's goal for event-organizer access is unimplementable
-     *            with the current data structure. The secure default is self-management by the certificate recipient.
-     */
+    // CERTIFICATES
     match /certificates/{certificateId} {
-      allow get: if isSignedIn() && request.auth.uid == resource.data.userId;
-      allow list: if false;
-      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
-      allow update: if isSignedIn() && request.auth.uid == resource.data.userId && resource != null && request.resource.data.userId == resource.data.userId;
-      allow delete: if isSignedIn() && request.auth.uid == resource.data.userId && resource != null;
+        // Organizers/Admins can issue certificates.
+        allow create: if isRole('organizer') || isRole('admin');
+        // Users can read their own certificates.
+        allow read: if (isSignedIn() && resource.data.userId == request.auth.uid) || isRole('admin');
+        // Admins can validate any certificate.
+        allow list, update, delete: if isRole('admin');
     }
 
+    // REPORTS
+    match /reports/{reportId} {
+        // Only organizers and admins can manage reports.
+        allow create, read, update, delete, list: if isRole('organizer') || isRole('admin');
+    }
   }
 }

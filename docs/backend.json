@@ -1,359 +1,107 @@
 {
   "entities": {
-    "Event": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "Event",
-      "type": "object",
-      "description": "Represents an event with details such as name, description, location, and associated tags.",
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the Event entity."
-        },
-        "name": {
-          "type": "string",
-          "description": "The name of the event."
-        },
-        "description": {
-          "type": "string",
-          "description": "A detailed description of the event."
-        },
-        "location": {
-          "type": "string",
-          "description": "The location where the event is held."
-        },
-        "startTime": {
-          "type": "string",
-          "description": "The start time of the event.",
-          "format": "date-time"
-        },
-        "endTime": {
-          "type": "string",
-          "description": "The end time of the event.",
-          "format": "date-time"
-        },
-        "organizerId": {
-          "type": "string",
-          "description": "Reference to the User who is organizing the event. (Relationship: User 1:N Event)"
-        },
-        "tagIds": {
-          "type": "array",
-          "description": "References to Tags associated with the event. (Relationship: Tag N:N Event)",
-          "items": {
-            "type": "string"
-          }
-        }
-      },
-      "required": [
-        "id",
-        "name",
-        "description",
-        "location",
-        "startTime",
-        "endTime",
-        "organizerId"
-      ]
-    },
     "User": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "User",
       "type": "object",
-      "description": "Represents a user in the system, including their profile information.",
+      "description": "Represents a user in the system.",
       "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the User entity."
-        },
-        "firstName": {
-          "type": "string",
-          "description": "The first name of the user."
-        },
-        "lastName": {
-          "type": "string",
-          "description": "The last name of the user."
-        },
-        "email": {
-          "type": "string",
-          "description": "The email address of the user.",
-          "format": "email"
-        },
-        "profilePicture": {
-          "type": "string",
-          "description": "URL to the user's profile picture.",
-          "format": "uri"
-        },
-        "enrolledSectionIds": {
-          "type": "array",
-          "description": "References to Sections the user is enrolled in. (Relationship: Section N:N User)",
-          "items": {
-            "type": "string"
-          }
-        },
-        "role": {
-          "type": "string",
-          "description": "The role of the user, e.g., student or admin.",
-          "enum": [
-            "student",
-            "admin"
-          ]
-        }
+        "name": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "role": { "type": "string", "enum": ["student", "organizer", "admin"] },
+        "interests": { "type": "array", "items": { "type": "string" } }
       },
-      "required": [
-        "id",
-        "firstName",
-        "lastName",
-        "email",
-        "role"
-      ]
+      "required": ["name", "email", "role"]
     },
-    "Tag": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "Tag",
+    "Event": {
+      "title": "Event",
       "type": "object",
-      "description": "Represents a tag or category associated with events.",
+      "description": "Represents an event.",
       "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the Tag entity."
-        },
-        "name": {
-          "type": "string",
-          "description": "The name of the tag."
-        },
-        "description": {
-          "type": "string",
-          "description": "A description of what the tag represents."
-        }
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "date": { "type": "string", "format": "date-time" },
+        "time": { "type": "string" },
+        "venue": { "type": "string" },
+        "category": { "type": "string" },
+        "tags": { "type": "array", "items": { "type": "string" } },
+        "createdBy": { "type": "string" }
       },
-      "required": [
-        "id",
-        "name",
-        "description"
-      ]
+      "required": ["title", "date", "venue", "createdBy"]
+    },
+    "Registration": {
+      "title": "Registration",
+      "type": "object",
+      "description": "Links a user to an event they registered for.",
+      "properties": {
+        "userId": { "type": "string" },
+        "eventId": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "eventId", "createdAt"]
     },
     "Attendance": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "Attendance",
-      "type": "object",
-      "description": "Represents the attendance record of a user at an event.",
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the Attendance entity."
+        "title": "Attendance",
+        "type": "object",
+        "properties": {
+            "eventId": { "type": "string" },
+            "userId": { "type": "string" },
+            "present": { "type": "boolean" },
+            "timestamp": { "type": "string", "format": "date-time"}
         },
-        "eventId": {
-          "type": "string",
-          "description": "Reference to the Event. (Relationship: Event 1:N Attendance)"
-        },
-        "userId": {
-          "type": "string",
-          "description": "Reference to the User. (Relationship: User 1:N Attendance)"
-        },
-        "checkInTime": {
-          "type": "string",
-          "description": "The time when the user checked in.",
-          "format": "date-time"
-        }
-      },
-      "required": [
-        "id",
-        "eventId",
-        "userId",
-        "checkInTime"
-      ]
+        "required": ["eventId", "userId", "present", "timestamp"]
     },
     "Certificate": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "Certificate",
-      "type": "object",
-      "description": "Represents a certificate earned by a user for attending an event.",
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the Certificate entity."
+        "title": "Certificate",
+        "type": "object",
+        "properties": {
+            "uuid": { "type": "string" },
+            "hash": { "type": "string" },
+            "eventId": { "type": "string" },
+            "userId": { "type": "string" },
+            "issueDate": { "type": "string", "format": "date-time"}
         },
-        "eventId": {
-          "type": "string",
-          "description": "Reference to the Event. (Relationship: Event 1:N Certificate)"
-        },
-        "userId": {
-          "type": "string",
-          "description": "Reference to the User. (Relationship: User 1:N Certificate)"
-        },
-        "issueDate": {
-          "type": "string",
-          "description": "The date when the certificate was issued.",
-          "format": "date-time"
-        },
-        "certificateUrl": {
-          "type": "string",
-          "description": "URL to the certificate file.",
-          "format": "uri"
-        }
-      },
-      "required": [
-        "id",
-        "eventId",
-        "userId",
-        "issueDate",
-        "certificateUrl"
-      ]
+        "required": ["uuid", "hash", "eventId", "userId", "issueDate"]
     },
-    "Section": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "Section",
-      "type": "object",
-      "description": "Represents a class section (e.g., a specific offering of a course).",
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the Section entity."
+     "Report": {
+        "title": "Report",
+        "type": "object",
+        "properties": {
+            "eventId": { "type": "string" },
+            "images": { "type": "array", "items": { "type": "string", "format": "uri" } },
+            "generatedAt": { "type": "string", "format": "date-time" }
         },
-        "name": {
-          "type": "string",
-          "description": "The name or identifier of the section (e.g., 'CS101-A')."
-        },
-        "description": {
-          "type": "string",
-          "description": "A description of the section."
-        }
-      },
-      "required": [
-        "id",
-        "name",
-        "description"
-      ]
+        "required": ["eventId", "generatedAt"]
     }
   },
   "auth": {
     "providers": [
-      "password",
-      "anonymous"
+      "password"
     ]
   },
   "firestore": {
-    "structure": [
-      {
-        "path": "/users/{userId}",
-        "definition": {
-          "entityName": "User",
-          "schema": {
-            "$ref": "#/backend/entities/User"
-          },
-          "description": "Stores user profile data. Authorization is based on `request.auth.uid == userId`.",
-          "params": [
-            {
-              "name": "userId",
-              "description": "The unique identifier of the user."
-            }
-          ]
-        }
-      },
-      {
-        "path": "/users/{userId}/events/{eventId}",
-        "definition": {
-          "entityName": "Event",
-          "schema": {
-            "$ref": "#/backend/entities/Event"
-          },
-          "description": "Stores events created and owned by a specific user. Authorization is based on `request.auth.uid == userId && resource.data.organizerId == userId`.",
-          "params": [
-            {
-              "name": "userId",
-              "description": "The unique identifier of the user."
-            },
-            {
-              "name": "eventId",
-              "description": "The unique identifier of the event."
-            }
-          ]
-        }
-      },
-      {
-        "path": "/tags/{tagId}",
-        "definition": {
-          "entityName": "Tag",
-          "schema": {
-            "$ref": "#/backend/entities/Tag"
-          },
-          "description": "Stores global tags. Publicly readable, but creation and modification could be limited to admin roles (enforced via a separate `/roles_admin/{uid}` collection).",
-          "params": [
-            {
-              "name": "tagId",
-              "description": "The unique identifier of the tag."
-            }
-          ]
-        }
-      },
-      {
-        "path": "/attendances/{attendanceId}",
-        "definition": {
-          "entityName": "Attendance",
-          "schema": {
-            "$ref": "#/backend/entities/Attendance"
-          },
-          "description": "Stores attendance records. Authorization for creating is based on the user being the event owner, path-based from `/users/{userId}/events/{eventId}`",
-          "params": [
-            {
-              "name": "attendanceId",
-              "description": "The unique identifier of the attendance record."
-            }
-          ]
-        }
-      },
-      {
-        "path": "/certificates/{certificateId}",
-        "definition": {
-          "entityName": "Certificate",
-          "schema": {
-            "$ref": "#/backend/entities/Certificate"
-          },
-          "description": "Stores certificates earned by users for events. Owner is path based `/users/{userId}/events/{eventId}`.",
-          "params": [
-            {
-              "name": "certificateId",
-              "description": "The unique identifier of the certificate."
-            }
-          ]
-        }
-      },
-      {
-        "path": "/sections/{sectionId}",
-        "definition": {
-          "entityName": "Section",
-          "schema": {
-            "$ref": "#/backend/entities/Section"
-          },
-          "description": "Stores class section information.",
-          "params": [
-            {
-              "name": "sectionId",
-              "description": "The unique identifier of the section."
-            }
-          ]
-        }
-      },
-      {
-        "path": "/users/{userId}/enrolledSections/{sectionId}",
-        "definition": {
-          "entityName": "Section",
-          "schema": {
-            "$ref": "#/backend/entities/Section"
-          },
-          "description": "Stores the enrollment of users to sections. Auth based on path ownership `/users/{userId}`.",
-          "params": [
-            {
-              "name": "userId",
-              "description": "The unique identifier of the user."
-            },
-            {
-              "name": "sectionId",
-              "description": "The unique identifier of the section."
-            }
-          ]
-        }
-      }
-    ],
-    "reasoning": "The Firestore data structure is designed to support the EventHub+ application, focusing on event discovery, AI recommendations, attendance tracking, certificate management, report generation, skill gap analysis, and section invitation suggestions. The structure prioritizes authorization independence and facilitates secure list operations.\n\n**Authorization Independence:**  To ensure authorization independence (CRITICAL), the structure avoids hierarchical authorization dependencies (`get()`). The primary means of achieving this is via path-based ownership for user-related data and by denormalizing authorization data where collaborative access is needed (although no collaborative data was explicitly requested in the initial entity definitions).\n\n**Structural Segregation:** Collections are segregated based on security needs.  User-specific data resides under `/users/{userId}` to leverage path-based authentication. This allows simple security rules based on `request.auth.uid == userId`.\n\n**Access Modeling:** Path-based ownership (`/users/{userId}/events/{eventId}`) is used where a User exclusively owns data.  For direct user data such as profile data, the path `/users/{userId}` is used.\n\n**QAPs (Rules are not Filters):**  The structure enables secure list operations by ensuring that all documents within a collection share the same security requirements. Path-based ownership inherently supports secure listing because the rule can simply check `request.auth.uid == userId` to access data under `/users/{userId}`.\n\n**Explanation of Paths:**\n\n*   `/users/{userId}`: Stores user profile data.  Authorization is based on `request.auth.uid == userId`.\n*   `/users/{userId}/events/{eventId}`: Stores events created and owned by a specific user.  Authorization is based on `request.auth.uid == userId && resource.data.organizerId == userId`.\n*   `/tags/{tagId}`: Stores global tags.  Publicly readable, but creation and modification could be limited to admin roles (enforced via a separate `/roles_admin/{uid}` collection).\n*   `/attendances/{attendanceId}`: Stores attendance records. Authorization for creating is based on the user being the event owner, path-based from  `/users/{userId}/events/{eventId}`\n*   `/certificates/{certificateId}`: Stores certificates earned by users for events. Owner is path based `/users/{userId}/events/{eventId}`.\n*   `/sections/{sectionId}`: Stores class section information.\n*    `/users/{userId}/enrolledSections/{sectionId}`: Stores the enrolement of the users to sections. Auth based on path ownership `/users/{userId}`."
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/User" },
+      "description": "Stores user profile data."
+    },
+    "/events/{eventId}": {
+      "schema": { "$ref": "#/entities/Event" },
+      "description": "Stores all events."
+    },
+    "/registrations/{registrationId}": {
+      "schema": { "$ref": "#/entities/Registration" },
+      "description": "Stores event registration records."
+    },
+    "/attendance/{attendanceId}": {
+      "schema": { "$ref": "#/entities/Attendance" },
+      "description": "Stores attendance records for events."
+    },
+    "/certificates/{certificateId}": {
+      "schema": { "$ref": "#/entities/Certificate" },
+      "description": "Stores generated certificates for users."
+    },
+    "/reports/{reportId}": {
+        "schema": { "$ref": "#/entities/Report" },
+        "description": "Stores generated event reports."
+    }
   }
 }

@@ -2,57 +2,34 @@
 import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
-  Sidebar,
-  SidebarContent,
-  SidebarHeader,
-  SidebarInset,
-  SidebarMenu,
-  SidebarMenuItem,
-  SidebarMenuButton,
-  SidebarTrigger,
-} from '@/components/ui/sidebar';
-import {
-  Award,
-  BarChart2,
+  Home,
   Calendar,
-  FileText,
   LayoutDashboard,
   QrCode,
+  FileText,
+  BarChart2,
   Users,
-  GraduationCap,
+  LogOut,
+  Settings,
+  User,
 } from 'lucide-react';
 import { UserNav } from '@/components/user-nav';
 import { useFirebase } from '@/firebase';
 import { useEffect, useState } from 'react';
 import { doc, getDoc } from 'firebase/firestore';
-
-const studentNavItems = [
-  { href: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-  { href: '/events', icon: Calendar, label: 'Events' },
-  { href: '/attendance', icon: QrCode, label: 'Attendance' },
-  { href: '/certificates', icon: Award, label: 'Certificates' },
-];
-
-const adminNavItems = [
-  { href: '/admin/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-  { href: '/events', icon: Calendar, label: 'Events' },
-  { href: '/reports', icon: FileText, label: 'Reports' },
-  { href: '/analytics', icon: BarChart2, label: 'Analytics' },
-  { href: '/tools/invite-suggestions', icon: Users, label: 'Invite Tool' },
-];
+import { Button } from '@/components/ui/button';
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const { user, isUserLoading, firestore } = useFirebase();
+  const { user, isUserLoading, firestore, auth } = useFirebase();
   const router = useRouter();
   const [userRole, setUserRole] = useState<string | null>(null);
   const [isRoleLoading, setIsRoleLoading] = useState(true);
 
   useEffect(() => {
+    if (isUserLoading) return;
     if (!user) {
-      if (!isUserLoading) {
-        router.push('/login');
-      }
+      router.push('/login');
       return;
     }
 
@@ -62,17 +39,13 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         const userDocRef = doc(firestore, 'users', user.uid);
         const userDoc = await getDoc(userDocRef);
         if (userDoc.exists()) {
-          const role = userDoc.data()?.role;
-          setUserRole(role);
+          setUserRole(userDoc.data()?.role);
         } else {
-          // If the doc doesn't exist, the user might be signing up.
-          // We can wait for it to be created. This can be improved.
-          console.warn("User document not found for uid:", user.uid);
-          setUserRole(null); 
+          setUserRole(null);
         }
       } catch (error) {
         console.error("Error fetching user role:", error);
-        setUserRole(null); // Set to null on error
+        setUserRole(null);
       } finally {
         setIsRoleLoading(false);
       }
@@ -80,79 +53,94 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
     fetchUserRole();
   }, [user, isUserLoading, firestore, router]);
-  
-  // New effect for handling redirection logic separately
-  useEffect(() => {
-    if (!isUserLoading && !isRoleLoading && user) {
-        if (userRole === 'admin' && !pathname.startsWith('/admin')) {
-          router.push('/admin/dashboard');
-        } else if (userRole === 'student' && (pathname.startsWith('/admin') || pathname.startsWith('/reports') || pathname.startsWith('/analytics') || pathname.startsWith('/tools'))) {
-          router.push('/dashboard');
-        }
-    }
-  }, [isUserLoading, isRoleLoading, userRole, pathname, router, user]);
 
+  const handleLogout = async () => {
+    await auth.signOut();
+    router.push('/home');
+  };
 
   const isLoading = isUserLoading || isRoleLoading;
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-screen bg-background">
-        <div className="text-center text-foreground">
-          <GraduationCap className="mx-auto h-12 w-12 animate-pulse" />
-          <p className="mt-4">Loading EventHub+...</p>
-        </div>
+      <div className="flex h-screen w-screen items-center justify-center">
+        <p>Loading...</p>
       </div>
     );
   }
 
-  // If loading is finished and there's no user, we've already redirected, but this is a safeguard.
-  if(!user) return null;
+  const commonLinks = [
+    { href: '/events', label: 'Events', icon: Calendar },
+    { href: '/qr-scanner', label: 'QR Scanner', icon: QrCode },
+  ];
 
+  const studentLinks = [
+    { href: '/student-dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  ];
+  
+  const organizerLinks = [
+    { href: '/organizer-dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    { href: '/reports', label: 'Reports', icon: FileText },
+  ];
+  
+  const adminLinks = [
+    { href: '/admin-panel', label: 'Admin Panel', icon: Settings },
+  ];
 
-  const navItems = userRole === 'admin' ? adminNavItems : studentNavItems;
-  const homeLink = userRole === 'admin' ? '/admin/dashboard' : '/dashboard';
+  let navLinks: { href: string; label: string; icon: React.ElementType }[] = [];
+  if (userRole === 'student') {
+    navLinks = [...studentLinks, ...commonLinks];
+  } else if (userRole === 'organizer') {
+    navLinks = [...organizerLinks, ...commonLinks];
+  } else if (userRole === 'admin') {
+    navLinks = [...adminLinks, ...organizerLinks, ...commonLinks];
+  }
+
 
   return (
-    <>
-      <Sidebar collapsible="icon" variant="sidebar" side="left">
-        <SidebarHeader className="p-4">
-          <Link href={homeLink} className="flex items-center gap-2.5 font-bold text-lg text-sidebar-foreground">
-            <GraduationCap className="w-8 h-8 text-sidebar-primary" />
-            <span className="font-headline tracking-tight group-data-[collapsible=icon]:hidden">RUAS EventHub+</span>
+    <div className="flex min-h-screen w-full bg-background">
+      <aside className="hidden w-64 flex-col border-r bg-card p-4 sm:flex">
+        <nav className="flex flex-col gap-2">
+          <Link href="/home" className="mb-4 flex items-center gap-2 font-bold text-lg">
+            EventHub+
           </Link>
-        </SidebarHeader>
-        <SidebarContent>
-          <SidebarMenu>
-            {navItems.map((item) => (
-              <SidebarMenuItem key={item.href}>
-                <SidebarMenuButton
-                  asChild
-                  isActive={pathname === item.href || (item.href !== homeLink && pathname.startsWith(item.href))}
-                  tooltip={item.label}
-                >
-                  <Link href={item.href}>
-                    <item.icon />
-                    <span>{item.label}</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            ))}
-          </SidebarMenu>
-        </SidebarContent>
-      </Sidebar>
-      <SidebarInset>
-        <header className="flex h-16 items-center gap-4 border-b bg-card px-4 lg:px-6 sticky top-0 z-30">
-          <SidebarTrigger className="md:hidden" />
-          <div className="flex-1" />
-          <UserNav user={user} />
-        </header>
-        <main className="flex-1 p-4 sm:p-6 lg:p-8 bg-background">
-          <div className="mx-auto max-w-7xl w-full">
-            {children}
+          {navLinks.map((link) => (
+            <Link key={link.href} href={link.href}>
+              <Button
+                variant={pathname === link.href ? 'secondary' : 'ghost'}
+                className="w-full justify-start"
+              >
+                <link.icon className="mr-2 h-4 w-4" />
+                {link.label}
+              </Button>
+            </Link>
+          ))}
+        </nav>
+        <div className="mt-auto flex flex-col gap-2">
+           <Button variant="ghost" className="w-full justify-start">
+              <User className="mr-2 h-4 w-4" />
+              Profile
+            </Button>
+            <Button variant="ghost" onClick={handleLogout} className="w-full justify-start">
+              <LogOut className="mr-2 h-4 w-4" />
+              Logout
+            </Button>
+        </div>
+      </aside>
+      <div className="flex flex-1 flex-col">
+        <header className="flex h-16 items-center justify-between border-b bg-card px-6">
+          <div className="sm:hidden">
+            <Link href="/home" className="font-bold text-lg">
+              EventHub+
+            </Link>
           </div>
+          <div className="flex-1" />
+           {user && <UserNav user={user} />}
+        </header>
+        <main className="flex-1 p-6">
+          {children}
         </main>
-      </SidebarInset>
-    </>
+      </div>
+    </div>
   );
 }
