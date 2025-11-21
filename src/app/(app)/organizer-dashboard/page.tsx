@@ -18,7 +18,7 @@ import { useToast } from '@/hooks/use-toast';
 import Image from 'next/image';
 import { Loader2 } from 'lucide-react';
 import { Label } from '@/components/ui/label';
-import { QRCode } from 'qrcode.react';
+import { QRCodeSVG } from 'qrcode.react';
 
 export default function OrganizerDashboardPage() {
   const { user } = useFirebase();
@@ -26,7 +26,7 @@ export default function OrganizerDashboardPage() {
   const defaultTab = searchParams.get('tab') || 'my-events';
 
   return (
-    <div className="animate-in fade-in-50">
+    <div className="mx-auto w-full max-w-7xl animate-in fade-in-50">
       <PageHeader
         title="Organizer Dashboard"
         description={`Manage your events, ${user?.displayName || 'Organizer'}.`}
@@ -196,7 +196,7 @@ function QRGenerator() {
                 
                 {eventId && (
                     <div className="mt-4 text-center p-4 bg-white rounded-md inline-block">
-                        <QRCode value={eventId} size={256} />
+                        <QRCodeSVG value={eventId} size={256} />
                         <p className="mt-2 text-sm text-muted-foreground">Scan this for check-in.</p>
                     </div>
                 )}
