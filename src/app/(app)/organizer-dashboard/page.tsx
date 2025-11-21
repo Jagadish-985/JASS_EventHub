@@ -231,18 +231,16 @@ function AttendanceList() {
 
                 // 2. If there are attendees, fetch their user profiles
                 if (userIds.length > 0) {
-                    // Firestore 'in' query is limited to 30 items per query. 
-                    // For more, you'd need to batch the requests.
                     const usersQuery = query(collection(firestore, 'users'), where(documentId(), 'in', userIds.slice(0, 30)));
                     const usersSnap = await getDocs(usersQuery);
                     const usersData = usersSnap.docs.map(doc => ({ ...doc.data(), id: doc.id } as User));
                     setAttendees(usersData);
                 } else {
-                    setAttendees([]); // Ensure attendees list is empty if no userIds
+                    setAttendees([]);
                 }
             } catch (error) {
                 console.error("Error fetching attendees:", error);
-                setAttendees([]); // Clear attendees on error
+                setAttendees([]);
             } finally {
                 setIsLoading(false);
             }
@@ -362,3 +360,5 @@ function FreeSectionFinder() {
         </Card>
     );
 }
+
+    
