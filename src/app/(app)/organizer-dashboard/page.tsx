@@ -8,7 +8,7 @@ import { useFirebase, setDocumentNonBlocking, addDocumentNonBlocking } from '@/f
 import { useCollection } from '@/firebase/firestore/use-collection';
 import { collection, query, where, getDocs, setDoc, doc } from 'firebase/firestore';
 import { useMemoFirebase } from '@/firebase/provider';
-import type { Event, Registration } from '@/lib/types';
+import type { Event, Registration, Attendance, User } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -19,6 +19,22 @@ import Image from 'next/image';
 import { Loader2 } from 'lucide-react';
 import { Label } from '@/components/ui/label';
 import { QRCodeSVG } from 'qrcode.react';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
+
 
 export default function OrganizerDashboardPage() {
   const { user } = useFirebase();
@@ -36,6 +52,7 @@ export default function OrganizerDashboardPage() {
           <TabsTrigger value="create-event">Create Event</TabsTrigger>
           <TabsTrigger value="my-events">My Events</TabsTrigger>
           <TabsTrigger value="registrations">Registrations</TabsTrigger>
+          <TabsTrigger value="attendance">Attendance</TabsTrigger>
           <TabsTrigger value="qr-generator">QR Generator</TabsTrigger>
           <TabsTrigger value="free-section-finder">Free Section Finder</TabsTrigger>
         </TabsList>
@@ -47,6 +64,9 @@ export default function OrganizerDashboardPage() {
         </TabsContent>
         <TabsContent value="registrations">
           <RegistrationsList />
+        </TabsContent>
+         <TabsContent value="attendance">
+          <AttendanceList />
         </TabsContent>
         <TabsContent value="qr-generator">
           <QRGenerator />
@@ -179,6 +199,97 @@ function RegistrationsList() {
     );
 }
 
+function AttendanceList() {
+    const { firestore, user } = useFirebase();
+    const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
+    const [attendees, setAttendees] = useState<User[]>([]);
+    const [isLoading, setIsLoading] = useState(false);
+
+    const eventsQuery = useMemoFirebase(() => {
+        if (!user || !firestore) return null;
+        return query(collection(firestore, 'events'), where('organizerId', '==', user.uid));
+    }, [firestore, user]);
+    const { data: events, isLoading: isLoadingEvents } = useCollection<Event>(eventsQuery);
+
+    useEffect(() => {
+        if (!selectedEventId || !firestore) {
+            setAttendees([]);
+            return;
+        };
+
+        const fetchAttendees = async () => {
+            setIsLoading(true);
+            const attendanceQuery = query(collection(firestore, 'attendance'), where('eventId', '==', selectedEventId));
+            const attendanceSnap = await getDocs(attendanceQuery);
+            const userIds = attendanceSnap.docs.map(doc => doc.data().userId);
+
+            if (userIds.length > 0) {
+                const usersQuery = query(collection(firestore, 'users'), where('__name__', 'in', userIds));
+                const usersSnap = await getDocs(usersQuery);
+                const usersData = usersSnap.docs.map(doc => ({ ...doc.data(), id: doc.id } as User));
+                setAttendees(usersData);
+            } else {
+                setAttendees([]);
+            }
+            setIsLoading(false);
+        };
+
+        fetchAttendees();
+
+    }, [selectedEventId, firestore]);
+
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle>Event Attendance</CardTitle>
+                <CardDescription>View who has checked into your event.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+                <Select onValueChange={setSelectedEventId} disabled={isLoadingEvents}>
+                    <SelectTrigger>
+                        <SelectValue placeholder={isLoadingEvents ? "Loading events..." : "Select an event"} />
+                    </SelectTrigger>
+                    <SelectContent>
+                        {events && events.length > 0 ? (
+                            events.map(event => (
+                                <SelectItem key={event.id} value={event.id}>{event.name}</SelectItem>
+                            ))
+                        ) : (
+                            <SelectItem value="no-events" disabled>You have no events</SelectItem>
+                        )}
+                    </SelectContent>
+                </Select>
+
+                {isLoading && <p>Loading attendance...</p>}
+                
+                {!isLoading && selectedEventId && attendees.length === 0 && (
+                    <p className="text-center text-muted-foreground pt-4">No one has checked in yet.</p>
+                )}
+
+                {!isLoading && attendees.length > 0 && (
+                     <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead>Name</TableHead>
+                                <TableHead>Email</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {attendees.map((attendee) => (
+                                <TableRow key={attendee.id}>
+                                    <TableCell>{attendee.name}</TableCell>
+                                    <TableCell>{attendee.email}</TableCell>
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
+                )}
+            </CardContent>
+        </Card>
+    );
+}
+
+
 function QRGenerator() {
     const [eventId, setEventId] = useState('');
 
@@ -234,3 +345,5 @@ function FreeSectionFinder() {
         </Card>
     );
 }
+
+    
