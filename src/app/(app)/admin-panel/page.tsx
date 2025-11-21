@@ -93,7 +93,7 @@ export default function AdminPanelPage() {
             </CardHeader>
             <CardContent>
                 <div className="aspect-video w-full overflow-hidden rounded-lg">
-                    <Image src="/123.jpg" alt="Event Heatmap" width={600} height={400} className="object-cover" data-ai-hint="heatmap analytics" />
+                    <Image src="https://picsum.photos/seed/heatmap/600/400" alt="Event Heatmap" width={600} height={400} className="object-cover" data-ai-hint="heatmap analytics" />
                 </div>
             </CardContent>
         </Card>
