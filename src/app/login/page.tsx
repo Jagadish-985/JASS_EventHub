@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { useFirebase, initiateEmailSignIn } from '@/firebase';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { Loader2 } from 'lucide-react';
 import {
   Select,
@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/select";
 import { doc, getDoc } from 'firebase/firestore';
 
-export default function LoginPage() {
+function LoginComponent() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [role, setRole] = useState('');
@@ -148,4 +148,12 @@ export default function LoginPage() {
       </Card>
     </div>
   );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <LoginComponent />
+    </Suspense>
+  )
 }

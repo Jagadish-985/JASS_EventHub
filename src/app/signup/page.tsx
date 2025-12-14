@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
@@ -12,7 +12,8 @@ import { updateProfile } from 'firebase/auth';
 import { doc } from 'firebase/firestore';
 import { Loader2 } from 'lucide-react';
 
-export default function SignupPage() {
+
+function SignupComponent() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -164,4 +165,12 @@ export default function SignupPage() {
         </Card>
     </div>
   );
+}
+
+export default function SignupPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <SignupComponent />
+    </Suspense>
+  )
 }
