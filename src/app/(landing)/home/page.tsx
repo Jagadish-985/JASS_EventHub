@@ -1,3 +1,4 @@
+
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import {
@@ -116,15 +117,15 @@ function SolutionSection() {
                     <ul className="mt-6 space-y-4 text-foreground/80">
                         <li className="flex items-start gap-3">
                             <CheckCircle className="h-6 w-6 text-accent mt-1"/>
-                            <span>**For Students:** Effortlessly discover, register, and attend events. Earn verifiable certificates to showcase your skills.</span>
+                            <span><span className="font-bold">For Students:</span> Effortlessly discover, register, and attend events. Earn verifiable certificates to showcase your skills.</span>
                         </li>
                          <li className="flex items-start gap-3">
                             <CheckCircle className="h-6 w-6 text-accent mt-1"/>
-                            <span>**For Organizers:** Streamline event creation, manage registrations, automate attendance, and generate reports instantly.</span>
+                            <span><span className="font-bold">For Organizers:</span> Streamline event creation, manage registrations, automate attendance, and generate reports instantly.</span>
                         </li>
                          <li className="flex items-start gap-3">
                             <CheckCircle className="h-6 w-6 text-accent mt-1"/>
-                            <span>**For Admins:** Access real-time analytics on event engagement, skill gaps, and ROI to inform strategic university planning.</span>
+                            <span><span className="font-bold">For Admins:</span> Access real-time analytics on event engagement, skill gaps, and ROI to inform strategic university planning.</span>
                         </li>
                     </ul>
                 </div>
