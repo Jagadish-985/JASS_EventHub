@@ -1,0 +1,13 @@
+{
+  "functions": {
+    "src/app/**/*.ts": {
+      "maxDuration": 120
+    },
+    "src/app/**/*.tsx": {
+      "maxDuration": 120
+    },
+    "src/ai/**/*.ts": {
+      "maxDuration": 120
+    }
+  }
+}
